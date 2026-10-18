@@ -1,0 +1,77 @@
+---
+title: 'PRIN: Perceptual-Structural Retinex-Inspired Network'
+summary: 'A Retinex-inspired network that couples perceptual and structural cues to enhance low-light images.'
+cover: ../../assets/projects/prin/cover.png
+tags: ['low-light', 'retinex']
+date: '2024-09'
+status: ongoing
+featured: true
+publication: prin
+enhanceDemo:
+  dark: ../../assets/projects/prin/demo-low.png
+  bright: ../../assets/projects/prin/demo-ours.png
+  label: 'LOL-v2 Real · PRIN output'
+  alt: 'A dim indoor photo of a toy castle above a red shop sign, from the LOL-v2 Real test set'
+---
+
+import { Image } from 'astro:assets';
+import ceilingLow from '../../assets/projects/prin/ceiling-low.png';
+import ceilingOurs from '../../assets/projects/prin/ceiling-ours.png';
+import ceilingGt from '../../assets/projects/prin/ceiling-gt.png';
+import castleLow from '../../assets/projects/prin/castle-low.png';
+import castleOurs from '../../assets/projects/prin/castle-ours.png';
+import castleGt from '../../assets/projects/prin/castle-gt.png';
+import statueLow from '../../assets/projects/prin/statue-low.png';
+import statueOurs from '../../assets/projects/prin/statue-ours.png';
+import statueGt from '../../assets/projects/prin/statue-gt.png';
+
+export const comparisons = [
+  {
+    name: 'Painted ceiling, LOL-v2 Synthetic',
+    detail: 'the relief carving',
+    images: [ceilingLow, ceilingOurs, ceilingGt],
+  },
+  {
+    name: 'Toy castle, LOL-v2 Real',
+    detail: 'the tower',
+    images: [castleLow, castleOurs, castleGt],
+  },
+  {
+    name: 'Tai chi statue, LOL-v2 Real',
+    detail: 'the folds in the sleeve',
+    images: [statueLow, statueOurs, statueGt],
+  },
+];
+
+## The problem
+
+Enhancing a low-light image takes more than raising its brightness. A good result has to correct exposure and keep fine texture and object boundaries intact while still looking natural. These aims pull in different directions, so a method has to balance them.
+
+## The idea
+
+PRIN builds on the Retinex model of image formation, splitting a dark image into reflectance, the intrinsic content of the scene, and illumination, the light that falls on it. Each component then gets its own job: wavelet-domain refinement recovers texture and boundaries in the reflectance and adjusts brightness smoothly and coherently in the illumination.
+
+## Why it matters
+
+Recovering fine detail and correcting global brightness are different problems, and the Retinex prior grounds the split between them in how an image physically forms. The goal is enhancement that preserves what is structurally meaningful in a scene, not only what becomes visible.
+
+## Results
+
+Each row shows a low-light input from the LOL-v2 test sets, the PRIN output and the ground-truth reference. The small red box marks a detail, shown enlarged in the larger box.
+
+<div class="triplets">
+  {comparisons.map((c) => (
+    <figure>
+      <div class="triplet-row">
+        {c.images.map((src, i) => (
+          <Image
+            src={src}
+            width={400}
+            alt={`${c.name}: ${['low-light input', 'PRIN output', 'ground truth'][i]}, with ${c.detail} enlarged`}
+          />
+        ))}
+      </div>
+      <figcaption>{c.name}. Left to right: low-light input, PRIN, ground truth.</figcaption>
+    </figure>
+  ))}
+</div>

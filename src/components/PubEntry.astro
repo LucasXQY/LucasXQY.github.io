@@ -1,0 +1,231 @@
+---
+import { Image } from 'astro:assets';
+import StatusPill from './StatusPill.astro';
+import { resolveAsset } from '../lib/assets';
+import { placeholderSvg } from '../lib/placeholder';
+import { authorSegments, isFirstAuthor, pdfLink, statusLabel } from '../lib/publications';
+import type { Publication } from '../schemas';
+
+interface Props {
+  pub: Publication;
+}
+
+const { pub } = Astro.props;
+const { links } = pub;
+
+// A teaser path that matches no file rejects here, which fails the build instead of shipping a
+// broken image.
+const teaser = pub.teaser ? await resolveAsset(pub.teaser) : undefined;
+
+const authors = authorSegments(pub.authors);
+
+// Under-review and in-preparation papers only ever expose arXiv, so the main button is labelled
+// after the link it actually points at.
+const pdf = pdfLink(pub);
+const pdfLabel = pdf !== null && pdf === links.arxiv && pdf !== links.pdf ? 'arXiv' : 'PDF';
+
+// Link buttons in display order; one only exists when its link does.
+const linkButtons: { label: string; href: string }[] = [];
+if (pdf !== null) linkButtons.push({ label: pdfLabel, href: pdf });
+if (links.arxiv && links.arxiv !== pdf) linkButtons.push({ label: 'arXiv', href: links.arxiv });
+if (links.code) linkButtons.push({ label: 'Code', href: links.code });
+if (links.project) linkButtons.push({ label: 'Project', href: links.project });
+if (links.doi) linkButtons.push({ label: 'DOI', href: links.doi });
+
+const showVenueLine = pub.venue !== '' || statusLabel(pub.status) !== null || Boolean(pub.note);
+const showButtons = linkButtons.length > 0 || Boolean(pub.bibtex);
+---
+
+<article
+  class="pub"
+  data-testid="pub-entry"
+  id={pub.id}
+  data-first-author={String(isFirstAuthor(pub))}
+  data-selected={String(pub.selected)}
+>
+  <div class="thumb">
+    {teaser ? (
+      <Image src={teaser} width={132} height={88} densities={[1, 2]} alt="Teaser figure" />
+    ) : (
+      <img
+        src={placeholderSvg(pub.id, pub.title)}
+        width="132"
+        height="88"
+        alt=""
+        loading="lazy"
+        decoding="async"
+      />
+    )}
+  </div>
+  <div class="body">
+    <h3 class="title">{pub.title}</h3>
+    <p class="authors">
+      {authors.map((author, index) => (
+        <>
+          {index > 0 && ', '}
+          {author.self ? <strong class="self">{author.name}</strong> : author.name}
+        </>
+      ))}
+    </p>
+    {showVenueLine && (
+      <p class="venue-line">
+        {pub.venue !== '' && <span class="venue">{pub.venue}</span>}
+        <StatusPill status={pub.status} />
+        {pub.note && <span class="note mono">· {pub.note}</span>}
+      </p>
+    )}
+    {showButtons && (
+      <div class="buttons">
+        {linkButtons.map((button) => (
+          <a class="btn mono" href={button.href}>
+            {button.label}
+          </a>
+        ))}
+        {pub.bibtex && (
+          <button type="button" class="btn mono" data-bibtex={pub.bibtex} aria-live="polite">
+            Copy BibTeX
+          </button>
+        )}
+      </div>
+    )}
+  </div>
+</article>
+
+<script>
+  // One delegated listener serves every Copy BibTeX button on the page; Astro includes this script
+  // once however many entries render.
+  const LABEL_MS = 1500;
+  const timers = new WeakMap<HTMLElement, number>();
+
+  document.addEventListener('click', (event) => {
+    if (!(event.target instanceof Element)) return;
+    const button = event.target.closest<HTMLButtonElement>('button[data-bibtex]');
+    if (!button) return;
+
+    const original = (button.dataset.label ??= button.textContent?.trim() ?? 'Copy BibTeX');
+    const show = (text: string) => {
+      button.textContent = text;
+      window.clearTimeout(timers.get(button));
+      timers.set(
+        button,
+        window.setTimeout(() => {
+          button.textContent = original;
+        }, LABEL_MS),
+      );
+    };
+
+    const copy = navigator.clipboard?.writeText(button.dataset.bibtex ?? '');
+    if (!copy) {
+      show('Copy failed');
+      return;
+    }
+    copy.then(
+      () => show('Copied'),
+      () => show('Copy failed'),
+    );
+  });
+</script>
+
+<style>
+  .pub {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px 18px;
+    padding: 14px 0;
+    border-top: 1px solid var(--border);
+  }
+
+  /* An author rule with display: grid would otherwise beat the UA [hidden] rule. */
+  .pub[hidden] {
+    display: none;
+  }
+
+  @media (min-width: 520px) {
+    .pub {
+      grid-template-columns: 132px minmax(0, 1fr);
+    }
+  }
+
+  .thumb {
+    width: 132px;
+    height: 88px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+  }
+
+  /* The <Image> component renders its <img> itself, so scoped selectors cannot reach it. */
+  .thumb :global(img) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 650;
+    line-height: 1.4;
+  }
+
+  .authors {
+    margin: 2px 0 0;
+    color: var(--text-2);
+    font-size: 13.5px;
+  }
+
+  .self {
+    color: var(--text-1);
+    font-weight: 600;
+  }
+
+  .venue-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 10px;
+    margin: 0;
+    font-size: 13.5px;
+  }
+
+  .venue {
+    color: var(--text-3);
+    font-style: italic;
+  }
+
+  /* Pulled towards the pill so the two read as one phrase, e.g. "under review · second round". */
+  .note {
+    margin-left: -4px;
+    color: var(--text-2);
+    font-size: 11.5px;
+  }
+
+  .buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding: 0 10px;
+    border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--accent);
+    font-size: 11.5px;
+    line-height: 1.4;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .btn:hover {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+  }
+</style>

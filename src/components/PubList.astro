@@ -1,0 +1,42 @@
+---
+import PubEntry from './PubEntry.astro';
+import type { Publication } from '../schemas';
+
+interface Props {
+  pubs: Publication[];
+  groupByYear: boolean;
+}
+
+const { pubs, groupByYear } = Astro.props;
+
+// Groups keep the order in which each year first appears, so a list sorted newest-first yields
+// newest-first headings.
+const byYear = new Map<number, Publication[]>();
+for (const pub of pubs) byYear.set(pub.year, [...(byYear.get(pub.year) ?? []), pub]);
+const groups = [...byYear];
+---
+
+{groupByYear ? (
+  groups.map(([year, yearPubs]) => (
+    <section data-year-group>
+      <h2 class="year">{year}</h2>
+      {yearPubs.map((pub) => (
+        <PubEntry pub={pub} />
+      ))}
+    </section>
+  ))
+) : (
+  <div>
+    {pubs.map((pub) => (
+      <PubEntry pub={pub} />
+    ))}
+  </div>
+)}
+
+<style>
+  .year {
+    margin: 32px 0 8px;
+    font-size: 19px;
+    font-weight: 700;
+  }
+</style>

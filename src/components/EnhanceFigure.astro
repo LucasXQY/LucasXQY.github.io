@@ -1,0 +1,179 @@
+---
+// The hover-to-enhance egg: a dark input image with its enhanced version stacked on top at
+// opacity 0. Hovering fades the enhanced layer in; a click, tap or Enter/Space pins it, so touch
+// and keyboard visitors get the same reveal. The two images are the same picture twice, so only
+// the dark one carries the alt text. `.egg` hides the figure when printing.
+import { Image } from 'astro:assets';
+import type { HTMLAttributes } from 'astro/types';
+import { ENHANCE_HINT, ENHANCE_LABEL } from '../data/eggs';
+
+interface Props extends HTMLAttributes<'figure'> {
+  dark: ImageMetadata;
+  bright: ImageMetadata;
+  alt: string;
+  label: string;
+}
+
+// `class` is pulled out of the spread so a caller's class adds to `enhance egg`, not replaces it.
+const { dark, bright, alt, label, class: className, ...rest } = Astro.props;
+---
+
+<figure class:list={['enhance', 'egg', className]} {...rest}>
+  <button
+    type="button"
+    class="enhance-toggle"
+    aria-pressed="false"
+    aria-label="Show the enhanced image"
+  >
+    <Image class="dark" src={dark} alt={alt} loading="eager" />
+    <Image class="bright" src={bright} alt="" loading="eager" />
+  </button>
+  <span class="hint" aria-hidden="true">
+    {ENHANCE_HINT.idle}
+  </span>
+  <span class="tag" aria-hidden="true">
+    {ENHANCE_LABEL(label)}
+  </span>
+</figure>
+
+<script>
+  import { ENHANCE_HINT } from '../data/eggs';
+  import { store } from '../lib/achievements';
+
+  document.querySelectorAll<HTMLElement>('.enhance').forEach((figure) => {
+    const toggle = figure.querySelector<HTMLButtonElement>('.enhance-toggle');
+    const hint = figure.querySelector<HTMLElement>('.hint');
+    if (!toggle || !hint) return;
+
+    let hovering = false; // the pointer is over the figure: a preview that ends when it leaves
+    let pinned = false; // toggled by click, tap, Enter or Space; this is what aria-pressed reports
+
+    const render = (): void => {
+      const enhanced = hovering || pinned;
+      figure.classList.toggle('is-enhanced', enhanced);
+      figure.classList.toggle('is-pinned', pinned);
+      toggle.setAttribute('aria-pressed', String(pinned));
+      hint.textContent = pinned ? ENHANCE_HINT.pinned : ENHANCE_HINT.idle;
+      if (enhanced) store.unlock('enhance'); // a no-op after the first time
+    };
+
+    // Only a mouse hovers. A finger or pen sends pointerenter too, and a touch laptop that
+    // reports hover support would otherwise leave the image bright after a tap; those inputs
+    // go through the click handler instead.
+    figure.addEventListener('pointerenter', (event) => {
+      if (event.pointerType !== 'mouse') return;
+      hovering = true;
+      render();
+    });
+    figure.addEventListener('pointerleave', (event) => {
+      if (event.pointerType !== 'mouse') return;
+      hovering = false;
+      render();
+    });
+    toggle.addEventListener('click', () => {
+      pinned = !pinned;
+      render();
+    });
+  });
+</script>
+
+<style>
+  .enhance {
+    position: relative;
+    margin: 0;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: #000;
+  }
+
+  .enhance-toggle {
+    display: block;
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    cursor: pointer;
+    line-height: 0;
+  }
+
+  /* The figure clips overflow, so the focus ring sits inside it, in a colour that reads on both
+     the near-black and the bright image. */
+  .enhance-toggle:focus-visible {
+    outline: 2px solid #67e8f9;
+    outline-offset: -4px;
+  }
+
+  /* <Image> renders its own <img>, so scoped selectors cannot reach it. */
+  .enhance :global(img) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .enhance :global(.bright) {
+    position: absolute;
+    top: 0;
+    left: 0;
+    opacity: 0;
+    /* The one transition longer than 300 ms: the slow brightening is the whole effect. The global
+       reduced-motion rule turns it off. */
+    transition: opacity 1s ease;
+  }
+
+  .enhance.is-enhanced :global(.bright) {
+    opacity: 1;
+  }
+
+  /* Fixed dark pills with light text: they sit on an image, so the colours do not follow the
+     theme. Even over pure white, #67e8f9 and #fbbf24 on this pill keep 8.7:1 and 7.6:1. */
+  .hint,
+  .tag {
+    position: absolute;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: rgb(11 15 20 / 0.85);
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    line-height: 1.4;
+    pointer-events: none;
+  }
+
+  .hint {
+    top: 10px;
+    left: 12px;
+    color: #67e8f9;
+    transition: opacity 0.3s;
+  }
+
+  .tag {
+    right: 12px;
+    bottom: 10px;
+    max-width: calc(100% - 24px);
+    color: #fbbf24;
+    text-align: right;
+    opacity: 0;
+    transition: opacity 1s;
+  }
+
+  /* On a phone the caption would wrap and cover the scene; a smaller size keeps it on one line. */
+  @media (max-width: 480px) {
+    .hint,
+    .tag {
+      font-size: 10.5px;
+    }
+  }
+
+  /* Hovering hides the hint; pinning keeps it, now saying how to let go. */
+  .enhance.is-enhanced:not(.is-pinned) .hint {
+    opacity: 0;
+  }
+
+  .enhance.is-enhanced .tag {
+    opacity: 1;
+  }
+</style>

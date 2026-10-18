@@ -1,0 +1,51 @@
+---
+title: 'Image2GPS: Locating a Photo on Campus from Pixels Alone'
+summary: 'A dual-view ResNet that predicts where on the Penn campus a photo was taken, trained on a 2,074-image dataset we collected across days and weather.'
+cover: ../../assets/projects/image2gps/cover.png
+tags: ['computer-vision', 'regression']
+date: '2026-05'
+status: done
+featured: false
+---
+
+import { Image } from 'astro:assets';
+import trainingCurve from '../../assets/projects/image2gps/training-curve.png';
+
+## The project
+
+This was the final project for Applied Machine Learning (CIS 5190) at the University of Pennsylvania in spring 2026, done in a team of three. The task is to predict the latitude and longitude of a camera from a single photo taken inside a fixed block of the Penn campus, scored by the average Haversine distance between the prediction and the true location. It is hard because different corners of campus can look alike, while the same spot looks different under another angle, crop or sky.
+
+## The data
+
+We built the dataset ourselves: 2,074 outdoor photos with GPS labels, taken inside the region bounded by 33rd and Walnut and 34th and Spruce. We started from 200 sunny photos, added 250 on cloudy days once lighting turned out to matter, then added about 1,500 more for spatial coverage, and dropped any image with missing or invalid GPS metadata. The cleaned dataset is published on [Hugging Face](https://huggingface.co/datasets/LucasShieh/cis519-gp16).
+
+## How it works
+
+The final model is a ResNet-based regressor with several additions, each aimed at a specific failure:
+
+- **Two views of each photo.** One branch sees the RGB image, which keeps cues like brick and grass. A second branch sees a grayscale, histogram-equalized copy that emphasizes building outlines and road edges and is less affected by weather and shadow. A shared encoder feeds both into a fusion head.
+- **Predicting in meters.** Instead of raw degrees, the model predicts normalized offsets in meters from a fixed campus origin, which puts both axes on the same scale and matches the distance metric. Predictions are converted back to latitude and longitude at the end.
+- **Spatial refinement.** A cluster head adds a coarse prior toward the groups of locations seen in training, and a memory bank of training embeddings nudges each prediction toward the coordinates of visually similar photos.
+- **Five-crop averaging.** At test time, the model averages its predictions over the four corners and center of each image, so a single bad crop does less damage.
+
+I designed the pretrained ResNet-18 dual-view model and the enhanced final model, and shared data collection and report writing with my teammates.
+
+## Results
+
+Each design step lowered the error. The first model, a larger ConvNeXtV2-style encoder, reached 84.8 m on average. Switching to a pretrained ResNet-18 brought it to 63.1 m, and predicting in meters with spatial refinement brought it to 60.4 m, both on the 200-image subset. Warm-starting that model and fine-tuning it on the full dataset gave the best result, 57.8 m, about 32% below the first model.
+
+<figure>
+  <Image
+    src={trainingCurve}
+    width={720}
+    alt="Validation mean and median Haversine distance by epoch for the meter-coordinate model, with a dashed reference line for the retrieval-enhanced model"
+  />
+  <figcaption>
+    Validation distance during training. The best base checkpoint comes at epoch 16, and the dashed
+    line shows the lower error once memory-based refinement is added.
+  </figcaption>
+</figure>
+
+## Why it matters
+
+Localizing from images alone matters wherever GPS is weak or missing, such as between tall buildings. The project showed that on a small, local dataset, matching the training target to the metric and adding simple spatial priors does more than a bigger backbone.

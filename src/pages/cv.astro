@@ -1,0 +1,276 @@
+---
+import Base from '../layouts/Base.astro';
+import { cvPdfExists, loadCv, loadPublications } from '../lib/data';
+import { statusSummary } from '../lib/publications';
+import { SITE_TITLE } from '../site.config';
+
+const cv = loadCv();
+// Counted by status, so an under-review paper is never presented as a publication.
+const publicationSummary = statusSummary(loadPublications()).join(' · ');
+const showDownload = cvPdfExists();
+
+// The order of this list is the order of the page. Publications is not part of cv.yaml: the page
+// only counts them and points at /publications/, so the two lists cannot drift apart.
+const sections = [
+  { heading: 'Education', kind: 'entries', entries: cv.education },
+  { heading: 'Research', kind: 'entries', entries: cv.research },
+  { heading: 'Publications', kind: 'publications' },
+  { heading: 'Teaching', kind: 'entries', entries: cv.teaching },
+  { heading: 'Industry', kind: 'entries', entries: cv.industry },
+  { heading: 'Leadership', kind: 'entries', entries: cv.leadership },
+  { heading: 'Honors', kind: 'honors' },
+  { heading: 'Skills', kind: 'skills' },
+] as const;
+---
+
+<Base
+  title={`CV · ${SITE_TITLE}`}
+  description="Curriculum vitae of Qiyi (Lucas) Xie: education, research, teaching, industry, leadership, honors and skills."
+>
+  <div class="cv">
+    <h1>Curriculum Vitae</h1>
+    {showDownload && (
+      <a class="btn download mono" href="/cv.pdf">
+        Download PDF
+      </a>
+    )}
+
+    {sections.map((section) => (
+      <section>
+        <h2>{section.heading}</h2>
+
+        {section.kind === 'entries' &&
+          section.entries.map((entry) => (
+            <article class="entry">
+              <div class="head">
+                <h3 class="title">{entry.title}</h3>
+                <p class="org">
+                  {entry.org}
+                  {entry.location !== undefined && ` · ${entry.location}`}
+                  {entry.role !== undefined && ` · ${entry.role}`}
+                </p>
+                <p class="when mono">{entry.dates}</p>
+              </div>
+              <ul class="bullets">
+                {entry.bullets.map((bullet) => (
+                  <li>{bullet}</li>
+                ))}
+              </ul>
+            </article>
+          ))}
+
+        {section.kind === 'publications' && (
+          <p class="pub-line">
+            <a href="/publications/">
+              {publicationSummary || 'See the publications page'} <span aria-hidden="true">→</span>
+            </a>
+          </p>
+        )}
+
+        {section.kind === 'honors' && (
+          <ul class="honors">
+            {cv.honors.map((honor) => (
+              <li class="honor">
+                <span>{honor.title}</span>
+                <span class="date mono">{honor.date}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {section.kind === 'skills' && (
+          <dl class="skills">
+            {cv.skills.map((skill) => (
+              <div class="group">
+                <dt>{skill.group}</dt>
+                <dd>
+                  <ul class="pills">
+                    {skill.items.map((item) => (
+                      <li class="pill">{item}</li>
+                    ))}
+                  </ul>
+                </dd>
+              </div>
+            ))}
+          </dl>
+        )}
+      </section>
+    ))}
+  </div>
+</Base>
+
+<style>
+  .cv {
+    max-width: 52rem;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 0 12px;
+    border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+    border-radius: 999px;
+    color: var(--accent);
+    font-size: 12px;
+    line-height: 1.4;
+    text-decoration: none;
+  }
+
+  .btn:hover {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+  }
+
+  section {
+    margin-top: 40px;
+  }
+
+  h2 {
+    margin: 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    font-size: 20px;
+    font-weight: 700;
+    break-after: avoid;
+  }
+
+  .entry {
+    margin-top: 22px;
+    break-inside: avoid;
+  }
+
+  /* Narrow: title, organisation and role, then the dates, in that order. Wide: the dates move into
+     a right-hand column beside the first two lines; DOM order is unchanged. */
+  .head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px 24px;
+    break-after: avoid;
+  }
+
+  @media (min-width: 640px) {
+    .head {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .title,
+    .org {
+      grid-column: 1;
+    }
+
+    .when {
+      grid-column: 2;
+      grid-row: 1 / span 2;
+      text-align: right;
+    }
+  }
+
+  .title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 650;
+    line-height: 1.4;
+  }
+
+  .org {
+    margin: 0;
+    color: var(--text-2);
+    font-size: 14px;
+  }
+
+  .when {
+    margin: 0;
+    color: var(--text-3);
+    font-size: 12px;
+    line-height: 1.7;
+  }
+
+  .bullets {
+    margin: 10px 0 0;
+    padding-left: 1.2em;
+    color: var(--text-2);
+    font-size: 14.5px;
+    line-height: 1.65;
+  }
+
+  .bullets li + li {
+    margin-top: 4px;
+  }
+
+  .pub-line {
+    margin: 16px 0 0;
+    color: var(--text-2);
+    font-size: 15px;
+  }
+
+  .honors {
+    margin: 8px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .honor {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 4px 20px;
+    padding: 8px 0;
+    font-size: 14.5px;
+    line-height: 1.5;
+    break-inside: avoid;
+  }
+
+  .date {
+    color: var(--text-3);
+    font-size: 12px;
+    line-height: 1.8;
+    white-space: nowrap;
+  }
+
+  .skills {
+    display: grid;
+    gap: 14px;
+    margin: 16px 0 0;
+  }
+
+  .group {
+    break-inside: avoid;
+  }
+
+  dt {
+    margin-bottom: 6px;
+    font-size: 14.5px;
+    font-weight: 700;
+  }
+
+  dd {
+    margin: 0;
+  }
+
+  .pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .pill {
+    padding: 1px 10px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    color: var(--text-2);
+    font-size: 13px;
+    line-height: 1.6;
+    text-decoration: none;
+    overflow-wrap: anywhere;
+  }
+
+  @media print {
+    .download {
+      display: none;
+    }
+  }
+</style>

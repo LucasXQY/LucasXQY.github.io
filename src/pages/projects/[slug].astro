@@ -1,0 +1,377 @@
+---
+import { Image } from 'astro:assets';
+import { getCollection, render } from 'astro:content';
+import type { CollectionEntry } from 'astro:content';
+import EnhanceFigure from '../../components/EnhanceFigure.astro';
+import Base from '../../layouts/Base.astro';
+import { loadPublications } from '../../lib/data';
+import { placeholderSvg } from '../../lib/placeholder';
+import { authorSegments, paperLinkAllowed, statusLabel } from '../../lib/publications';
+import { SITE_TITLE } from '../../site.config';
+
+export async function getStaticPaths() {
+  const projects = await getCollection('projects');
+  return projects.map((project) => ({ params: { slug: project.id }, props: { project } }));
+}
+
+interface Props {
+  project: CollectionEntry<'projects'>;
+}
+
+const { project } = Astro.props;
+const { title, summary, cover, tags, status, links, enhanceDemo } = project.data;
+const { Content } = await render(project);
+
+// A dangling `publication` id fails the build here, so a typo cannot ship a page that silently
+// lacks its authors and venue.
+const publication =
+  project.data.publication === undefined
+    ? undefined
+    : loadPublications().find((pub) => pub.id === project.data.publication);
+if (project.data.publication !== undefined && publication === undefined) {
+  throw new Error(
+    `Project "${project.id}" names publication "${project.data.publication}", but src/data/publications.yaml has no publication with that id.`,
+  );
+}
+
+// An unpublished paper's manuscript is not public, so its Paper button may only point at arXiv.
+const paper =
+  links.paper !== undefined && paperLinkAllowed(publication, links.paper) ? links.paper : undefined;
+
+const buttons = [
+  { label: 'Code', href: links.code },
+  { label: 'Paper', href: paper },
+  { label: 'Demo', href: links.demo },
+].filter((button): button is { label: string; href: string } => button.href !== undefined);
+
+const authors = publication ? authorSegments(publication.authors) : [];
+const venue = publication?.venue ?? '';
+const statusText = publication ? statusLabel(publication.status) : null;
+// A note such as "second round" qualifies the status, so it only shows beside one.
+const paperStatus =
+  statusText !== null && publication?.note ? `${statusText} · ${publication.note}` : statusText;
+const code = publication?.links.code;
+---
+
+<Base title={`${title} · ${SITE_TITLE}`} description={summary}>
+  <nav class="crumb mono" aria-label="Breadcrumb">
+    <a href="/projects/">projects</a> / <span aria-current="page">{project.id}</span>
+  </nav>
+  <h1>{title}</h1>
+
+  <div class="meta" data-testid="project-meta">
+    <span class:list={['pill', 'status', 'mono', status]} data-testid="project-status">
+      {status}
+    </span>
+    {tags.map((tag) => (
+      <span class="pill tag mono">{tag}</span>
+    ))}
+    {buttons.map((button) => (
+      <a class="btn mono" href={button.href}>
+        {button.label}
+      </a>
+    ))}
+  </div>
+
+  <div class="hero">
+    {enhanceDemo ? (
+      <EnhanceFigure
+        data-testid="project-figure"
+        dark={enhanceDemo.dark}
+        bright={enhanceDemo.bright}
+        alt={
+          enhanceDemo.alt ??
+          `Illustration of a dark scene and its brighter version (placeholder, not output of ${title})`
+        }
+        label={enhanceDemo.label ?? 'illustration · not model output'}
+      />
+    ) : (
+      <figure class="figure" data-testid="project-figure">
+        {cover ? (
+          <Image
+            src={cover}
+            width={640}
+            height={360}
+            densities={[1, 2]}
+            alt={`Cover figure for ${title}`}
+          />
+        ) : (
+          <img
+            src={placeholderSvg(project.id, title)}
+            width="640"
+            height="360"
+            alt=""
+            decoding="async"
+          />
+        )}
+      </figure>
+    )}
+
+    <aside class="side" data-testid="project-aside" aria-labelledby="tldr-title">
+      <h2 id="tldr-title">TL;DR</h2>
+      <p class="tldr">{summary}</p>
+      {(authors.length > 0 || venue !== '' || paperStatus !== null || code) && (
+        <dl class="kv mono">
+          {authors.length > 0 && (
+            <div class="row">
+              <dt>authors</dt>
+              <dd>
+                {authors.map((author, index) => (
+                  <>
+                    {index > 0 && ', '}
+                    {author.self ? <strong>{author.name}</strong> : author.name}
+                  </>
+                ))}
+              </dd>
+            </div>
+          )}
+          {venue !== '' && (
+            <div class="row">
+              <dt>venue</dt>
+              <dd>{venue}</dd>
+            </div>
+          )}
+          {paperStatus !== null && (
+            <div class="row">
+              <dt>status</dt>
+              <dd>{paperStatus}</dd>
+            </div>
+          )}
+          {code && (
+            <div class="row">
+              <dt>code</dt>
+              <dd>
+                <a href={code}>{code.replace(/^https?:\/\//, '')}</a>
+              </dd>
+            </div>
+          )}
+        </dl>
+      )}
+    </aside>
+  </div>
+
+  <div class="prose">
+    <Content />
+  </div>
+</Base>
+
+<style>
+  .crumb {
+    color: var(--text-3);
+    font-size: 12.5px;
+  }
+
+  h1 {
+    margin: 8px 0 0;
+    font-size: 30px;
+    font-weight: 750;
+    letter-spacing: -0.01em;
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 10px;
+    align-items: center;
+    margin-top: 12px;
+  }
+
+  .pill {
+    display: inline-block;
+    padding: 1px 9px;
+    border: 1px solid var(--text-3);
+    border-radius: 999px;
+    color: var(--text-2);
+    font-size: 11.5px;
+    line-height: 1.5;
+    white-space: nowrap;
+  }
+
+  .pill.ongoing {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .pill.tag {
+    border-color: var(--accent-2);
+    color: var(--accent-2);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding: 0 10px;
+    border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+    border-radius: 999px;
+    color: var(--accent);
+    font-size: 11.5px;
+    line-height: 1.4;
+    text-decoration: none;
+  }
+
+  .btn:hover {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+  }
+
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px 28px;
+    margin-top: 24px;
+  }
+
+  @media (min-width: 760px) {
+    .hero {
+      grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+      align-items: start;
+    }
+  }
+
+  .figure {
+    aspect-ratio: 16 / 9;
+    margin: 0;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+  }
+
+  /* The <Image> component renders its <img> itself, so scoped selectors cannot reach it. */
+  .figure :global(img) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .side {
+    padding: 16px 18px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+  }
+
+  .side h2 {
+    margin: 0 0 6px;
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .tldr {
+    margin: 0;
+    color: var(--text-2);
+    font-size: 14.5px;
+    line-height: 1.6;
+  }
+
+  .kv {
+    display: grid;
+    gap: 6px;
+    margin: 14px 0 0;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: 6.5em minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .kv dt {
+    color: var(--text-2);
+  }
+
+  .kv dd {
+    margin: 0;
+    color: var(--text-1);
+    overflow-wrap: anywhere;
+  }
+
+  .kv strong {
+    font-weight: 700;
+  }
+
+  .prose {
+    max-width: 72ch;
+    margin-top: 32px;
+    color: var(--text-2);
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  /* The MDX body is rendered by <Content />, so its elements need :global selectors. */
+  .prose :global(h2) {
+    margin: 28px 0 8px;
+    color: var(--text-1);
+    font-size: 19px;
+    font-weight: 700;
+  }
+
+  .prose :global(h3) {
+    margin: 22px 0 6px;
+    color: var(--text-1);
+    font-size: 16px;
+    font-weight: 650;
+  }
+
+  .prose :global(p),
+  .prose :global(ul),
+  .prose :global(ol) {
+    margin: 0 0 1em;
+  }
+
+  .prose :global(ul),
+  .prose :global(ol) {
+    padding-left: 1.4em;
+  }
+
+  .prose :global(strong) {
+    color: var(--text-1);
+  }
+
+  .prose :global(code) {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+  }
+
+  .prose :global(pre) {
+    overflow-x: auto;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+  }
+
+  .prose :global(img),
+  .prose :global(figure) {
+    max-width: 100%;
+  }
+
+  .prose :global(img) {
+    height: auto;
+  }
+
+  .prose :global(figure) {
+    margin: 1.2em 0;
+  }
+
+  .prose :global(figcaption) {
+    color: var(--text-3);
+    font-size: 13px;
+  }
+
+  /* A low / ours / ground-truth comparison: three panels of one scene side by side. */
+  .prose :global(.triplet-row) {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+  .prose :global(.triplet-row img) {
+    width: 100%;
+    border-radius: 4px;
+  }
+</style>

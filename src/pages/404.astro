@@ -1,0 +1,47 @@
+---
+import BlackHole from '../components/BlackHole.astro';
+import Base from '../layouts/Base.astro';
+import { BLACKHOLE_COPY } from '../data/eggs';
+import { SITE_TITLE } from '../site.config';
+---
+
+<Base
+  title={`Page not found · ${SITE_TITLE}`}
+  description="This page does not exist. Head back to the home page."
+  noindex
+>
+  <div class="lost">
+    <BlackHole />
+    <h1>{BLACKHOLE_COPY.title}</h1>
+    <p>{BLACKHOLE_COPY.body}</p>
+    <a href="/">{BLACKHOLE_COPY.back}</a>
+  </div>
+</Base>
+
+<script>
+  import { store } from '../lib/achievements';
+
+  store.unlock('blackhole');
+</script>
+
+<style>
+  .lost {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 36rem;
+    margin-inline: auto;
+    padding-block: 12vh;
+    text-align: center;
+  }
+
+  h1 {
+    font-size: clamp(26px, 5vw, 36px);
+    font-weight: 700;
+  }
+
+  p {
+    margin-bottom: 28px;
+    color: var(--text-2);
+  }
+</style>

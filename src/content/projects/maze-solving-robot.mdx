@@ -1,0 +1,32 @@
+---
+title: 'Path-Finding Robot: Vision-Guided Maze Solving'
+summary: 'A differential-drive robot in ROS 2 and Gazebo that maps a maze from an overhead camera, plans the shortest route with A*, and drives itself out.'
+cover: ../../assets/projects/maze-solving-robot/cover.png
+tags: ['robotics', 'path-planning']
+date: '2023-11'
+status: done
+featured: false
+---
+
+## The project
+
+This robot came out of the Foundations of Robot Autonomy online research seminar run by the Georgia Institute of Technology, from November 2023 to January 2024. Working in a team of three, I helped design and build a simulated robot that finds its own way out of a maze. It uses the core pieces of autonomy that the seminar taught: perception, planning and control.
+
+## How it works
+
+The robot is a small differential-drive car, 100 mm long with 35 mm wheels and a caster, modeled in CAD and placed in a ROS 2 simulation with Gazebo and RViz. It sits in a 2.0 m × 2.5 m maze. A camera mounted above the maze sees the whole layout, and separate ROS 2 nodes handle the robot model, driving, the top-down camera and video processing.
+
+From the overhead image, the pipeline works in four steps:
+
+- **Mapping.** A grayscale image of the empty maze is turned into a graph of nodes that the robot can move between.
+- **Localization.** Background subtraction against that reference image picks out the robot, and the centroid of the result gives its position.
+- **Path finding.** A depth-first search lists the possible routes, then Dijkstra's algorithm or A\* picks the shortest one.
+- **Motion planning.** Differential-drive kinematics, where v = (v<sub>L</sub> + v<sub>R</sub>)/2 and ω = (v<sub>R</sub> − v<sub>L</sub>)/L, turn each next waypoint into wheel speeds and a heading.
+
+## Results
+
+Both planners brought the robot to the exit. A\* got there with less work, because its heuristic sends the search toward the goal first. It expanded 118 nodes and reached the exit in 164 s, while Dijkstra's algorithm expanded 163 nodes and took 216 s.
+
+## Why it matters
+
+A fixed overhead camera can stand in for sensors on every robot, which suits closed spaces such as ports, logistics parks and patrolled facilities, where many robots move under the same view. The project ran during the same seminar as my [2024 paper on digital twins for human–robot collaboration](/publications/#dt-hrc).

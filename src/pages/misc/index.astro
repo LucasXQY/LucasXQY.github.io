@@ -1,0 +1,240 @@
+---
+import { Image } from 'astro:assets';
+import AchievementsPanel from '../../components/AchievementsPanel.astro';
+import Base from '../../layouts/Base.astro';
+import { resolveAsset } from '../../lib/assets';
+import { loadMisc } from '../../lib/data';
+import { isMiscEmpty } from '../../lib/misc';
+import { SITE_TITLE } from '../../site.config';
+
+// The page is built whether or not the nav links to it (see Base.astro). While misc.yaml is empty
+// it says so and keeps only the achievements panel, which is the part that always has content;
+// it is also kept out of search results and its description promises nothing yet.
+const misc = loadMisc();
+const empty = isMiscEmpty(misc);
+const description = empty
+  ? 'Hobbies, games and music — coming soon.'
+  : 'Hobbies, games and music of Qiyi (Lucas) Xie, and a small panel of curiosity achievements.';
+const { nowPlaying, list: games } = misc.games;
+const { embedUrl, playlists } = misc.music;
+
+// An image path that matches no file rejects here, which fails the build.
+const hobbies = await Promise.all(
+  misc.hobbies.map(async (hobby) => ({
+    ...hobby,
+    image: hobby.image ? await resolveAsset(hobby.image) : undefined,
+  })),
+);
+---
+
+<Base title={`Misc · ${SITE_TITLE}`} description={description} noindex={empty}>
+  <div class="misc">
+    <h1>Misc</h1>
+    {misc.intro && <p class="intro">{misc.intro}</p>}
+    {empty && <p class="empty">Nothing here yet.</p>}
+
+    {hobbies.length > 0 && (
+      <section>
+        <h2>Hobbies</h2>
+        <ul class="cards">
+          {hobbies.map((hobby) => (
+            <li class="card">
+              {hobby.image && <Image class="photo" src={hobby.image} alt="" width={640} />}
+              <h3>{hobby.title}</h3>
+              <p>{hobby.text}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
+
+    {(nowPlaying || games.length > 0) && (
+      <section>
+        <h2>Games</h2>
+        {nowPlaying && (
+          <div class="now-playing">
+            <p class="label mono">Now playing</p>
+            <p class="game-title">{nowPlaying.title}</p>
+            <p class="meta mono">{nowPlaying.platform}</p>
+          </div>
+        )}
+        {games.length > 0 && (
+          <ul class="games">
+            {games.map((game) => (
+              <li>
+                <span class="game-title">{game.title}</span>
+                {game.platform && <span class="meta mono">{game.platform}</span>}
+                {game.note && <span class="note">{game.note}</span>}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    )}
+
+    {(embedUrl || playlists.length > 0) && (
+      <section>
+        <h2>Music</h2>
+        {embedUrl && (
+          <iframe
+            class="player"
+            src={embedUrl}
+            title="Music player"
+            loading="lazy"
+            allow="encrypted-media"
+            referrerpolicy="strict-origin-when-cross-origin"
+          />
+        )}
+        {playlists.length > 0 && (
+          <ul class="playlists">
+            {playlists.map((playlist) => (
+              <li>
+                <a href={playlist.url} rel="noopener">
+                  {playlist.title}
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    )}
+
+    <section class="achievements egg">
+      <h2>Achievements</h2>
+      <AchievementsPanel />
+    </section>
+  </div>
+</Base>
+
+<style>
+  .misc {
+    max-width: 52rem;
+  }
+
+  h1 {
+    font-size: clamp(26px, 5vw, 34px);
+    font-weight: 700;
+  }
+
+  .intro {
+    max-width: 40rem;
+    color: var(--text-2);
+  }
+
+  .empty {
+    color: var(--text-2);
+  }
+
+  section {
+    margin-top: 40px;
+  }
+
+  h2 {
+    margin: 0 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  .cards,
+  .games,
+  .playlists {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .cards {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  }
+
+  .card {
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+  }
+
+  .card h3 {
+    margin: 0 0 4px;
+    font-size: 16px;
+    font-weight: 650;
+  }
+
+  .card p {
+    margin: 0;
+    color: var(--text-2);
+    font-size: 14.5px;
+  }
+
+  .photo {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin-bottom: 10px;
+    border-radius: 6px;
+  }
+
+  .now-playing {
+    margin-bottom: 20px;
+    padding: 14px 16px;
+    border: 1px solid color-mix(in srgb, var(--accent-2) 45%, transparent);
+    border-radius: 10px;
+    background: var(--surface);
+  }
+
+  .now-playing p {
+    margin: 0;
+  }
+
+  .label {
+    color: var(--accent-2);
+    font-size: 12px;
+  }
+
+  .game-title {
+    font-weight: 650;
+  }
+
+  .meta {
+    color: var(--text-3);
+    font-size: 12px;
+  }
+
+  .games li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .note {
+    flex-basis: 100%;
+    color: var(--text-2);
+    font-size: 14.5px;
+  }
+
+  .player {
+    display: block;
+    width: 100%;
+    height: 352px;
+    margin-bottom: 16px;
+    border: 0;
+    border-radius: 10px;
+  }
+
+  .playlists li + li {
+    margin-top: 6px;
+  }
+
+  @media print {
+    .player {
+      display: none;
+    }
+  }
+</style>

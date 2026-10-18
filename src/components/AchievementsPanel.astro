@@ -1,0 +1,187 @@
+---
+// The achievements panel: the six riddles with their lit or unlit state, a progress line, the link
+// to the hidden page once every star is lit, and the two buttons that stand in for the keyboard
+// triggers (the backtick key and typing "cat") on a phone. It sits inline on /misc/ and inside the
+// dialog the footer stars open, so it can appear twice on one page; hence no ids and a script that
+// serves every panel. The page renders it all unlit; the script lights it from the store.
+import { STAR_HINTS } from '../data/eggs';
+import { ACHIEVEMENTS } from '../lib/achievements';
+---
+
+<div class="ach-panel">
+  <p class="ach-progress mono">
+    <span class="ach-count">0</span> of {ACHIEVEMENTS.length}
+  </p>
+  <ol class="ach-list" role="list">
+    {ACHIEVEMENTS.map((id) => (
+      <li class="ach" data-id={id}>
+        <span class="ach-mark" aria-hidden="true">
+          ☆
+        </span>
+        <span class="ach-text">
+          <span class="sr-only ach-state">Locked: </span>
+          {STAR_HINTS[id]}
+        </span>
+      </li>
+    ))}
+  </ol>
+  <p class="ach-unlocked" hidden>
+    <a href="/misc/unlocked/">See what you unlocked →</a>
+  </p>
+  <div class="ach-actions egg">
+    <button type="button" class="ach-btn" data-action="terminal">
+      Open terminal
+    </button>
+    <button type="button" class="ach-btn" data-action="cat">
+      Summon cat
+      <span class="sr-only ach-note" hidden>
+        {' '}
+        (disabled because reduced motion is on)
+      </span>
+    </button>
+  </div>
+</div>
+
+<script>
+  import { ACHIEVEMENTS, store } from '../lib/achievements';
+
+  type Triggers = Window & { qxOpenTerminal?: () => void; qxToggleCat?: () => void };
+
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  document.querySelectorAll<HTMLElement>('.ach-panel').forEach((panel) => {
+    const items = panel.querySelectorAll<HTMLElement>('.ach');
+    const count = panel.querySelector<HTMLElement>('.ach-count');
+    const unlockedLink = panel.querySelector<HTMLElement>('.ach-unlocked');
+    const terminalButton = panel.querySelector<HTMLButtonElement>('[data-action="terminal"]');
+    const catButton = panel.querySelector<HTMLButtonElement>('[data-action="cat"]');
+    const catNote = catButton?.querySelector<HTMLElement>('.ach-note');
+
+    store.subscribe((ids) => {
+      items.forEach((item) => {
+        const lit = ids.some((id) => id === item.dataset.id);
+        item.classList.toggle('lit', lit);
+        const mark = item.querySelector('.ach-mark');
+        if (mark) mark.textContent = lit ? '✓' : '☆';
+        const state = item.querySelector('.ach-state');
+        if (state) state.textContent = lit ? 'Unlocked: ' : 'Locked: ';
+      });
+      if (count) count.textContent = String(ids.length);
+      if (unlockedLink) unlockedLink.hidden = ids.length !== ACHIEVEMENTS.length;
+    });
+
+    // Inside the footer dialog the buttons first close it. The dialog is modal, so it makes the
+    // rest of the page inert and paints over it: the terminal would open unreachable under it and
+    // the cat would be dimmed by its backdrop.
+    const dismissDialog = () => panel.closest('dialog')?.close();
+
+    terminalButton?.addEventListener('click', () => {
+      dismissDialog();
+      (window as Triggers).qxOpenTerminal?.();
+    });
+
+    catButton?.addEventListener('click', () => {
+      dismissDialog();
+      (window as Triggers).qxToggleCat?.();
+    });
+
+    // The cat never appears under reduced motion (src/lib/eggs/cat.ts), so the button says so
+    // instead of doing nothing. It follows the setting if the visitor changes it with the page open.
+    const syncMotion = () => {
+      if (catButton) catButton.disabled = reducedMotion.matches;
+      if (catNote) catNote.hidden = !reducedMotion.matches;
+    };
+    syncMotion();
+    reducedMotion.addEventListener('change', syncMotion);
+  });
+</script>
+
+<style>
+  .ach-panel {
+    display: grid;
+    gap: 14px;
+  }
+
+  .ach-progress {
+    margin: 0;
+    color: var(--text-2);
+    font-size: 13px;
+  }
+
+  .ach-list {
+    display: grid;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .ach {
+    display: grid;
+    grid-template-columns: 1.4em minmax(0, 1fr);
+    gap: 8px;
+    color: var(--text-2);
+    font-size: 14.5px;
+    line-height: 1.5;
+  }
+
+  .ach-mark {
+    color: var(--text-2);
+    text-align: center;
+  }
+
+  .ach.lit {
+    color: var(--text-1);
+  }
+
+  .ach.lit .ach-mark {
+    color: var(--star);
+    font-weight: 700;
+  }
+
+  .ach-unlocked {
+    margin: 0;
+    font-size: 15px;
+  }
+
+  .ach-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .ach-btn {
+    min-height: 32px;
+    padding: 0 14px;
+    border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.4;
+    cursor: pointer;
+  }
+
+  .ach-btn:hover:not(:disabled) {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+  }
+
+  .ach-btn:disabled {
+    border-color: var(--border);
+    color: var(--text-3);
+    cursor: not-allowed;
+  }
+
+  /* Visually hidden, still read by assistive technology. */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+</style>

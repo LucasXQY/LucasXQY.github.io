@@ -1,0 +1,40 @@
+---
+title: 'VetoNet: Auditable Risk Control for Selective Generative Enhancement'
+summary: 'Auditable risk control that decides when a low-light pipeline should generate, backed by conformal guarantees.'
+cover: ../../assets/projects/vetonet/cover.png
+tags: ['generative', 'conformal']
+date: '2026-05'
+status: ongoing
+featured: true
+links:
+  paper: 'https://arxiv.org/abs/2610.21335'
+publication: vetonet
+---
+
+import { Image } from 'astro:assets';
+import vetoCase from '../../assets/projects/vetonet/veto-case.png';
+
+## The problem
+
+Low-light enhancement can be deterministic, producing a single fixed output for each input, or generative, using a model such as a diffusion model to synthesize missing detail. Generation can recover more, but some of what it adds is invented: where the sensor captured little, a weak but real signal and a plausible hallucination are easy to confuse. The question is when a low-light pipeline should generate at all.
+
+## The idea
+
+VetoNet decides region by region whether to keep the deterministic result or to use a generative one, depending on whether generation helps there. The decision is calibrated with conformal risk control, a statistical method that keeps the risk of harm from generation below a chosen level without assuming a particular data distribution.
+
+<figure>
+  <Image
+    src={vetoCase}
+    width={720}
+    alt="Four versions of a lakeside mountain scene: the dark input, a result with orange generated streaks on the mountain, a clean certified result, and the ground truth"
+  />
+  <figcaption>
+    A LOL-v2 Synthetic test image. Routing on the router's quality score alone pastes generated
+    texture onto the mountain and raises LPIPS by 0.0355 over the base expert. The certificate
+    vetoes that override, and the result stays at the base expert's quality (LPIPS 0.0003 lower).
+  </figcaption>
+</figure>
+
+## Why it matters
+
+Hallucination is often treated as the unavoidable price of generative restoration. VetoNet treats it instead as a risk to be measured and bounded, with the stated aim of making that control auditable. Generation is then used only where its measured benefit justifies its risk, and the deterministic result keeps its reliable structure everywhere else.

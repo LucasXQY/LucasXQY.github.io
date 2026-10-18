@@ -1,0 +1,30 @@
+---
+title: 'Laser Engraver Cooling Control'
+summary: 'A two-microcontroller embedded design that keeps a laser engraving machine from overheating, with remote monitoring and an override from the cloud.'
+cover: ../../assets/projects/laser-cooling-control/cover.png
+tags: ['embedded', 'iot']
+date: '2024-07'
+status: done
+featured: false
+---
+
+## The project
+
+This was my individual final project for Embedded Systems at Xiamen University Malaysia, submitted in July 2024. The brief set out a laser engraving machine with a liquid cooling loop and asked for a complete embedded control system for it: the choice of microcontrollers, the interfacing circuits, the firmware and remote access over the internet.
+
+## How it works
+
+The design splits the work between two boards:
+
+- **Arduino Uno R3, for local control.** It reads a temperature sensor inside the machine, a coolant temperature sensor and a coolant level switch. It runs the pump when the machine passes 100 °C and the fan when the coolant passes 50 °C. When the coolant level drops, it opens a motorized valve to refill the tank for 5 s and then closes it again. Above 70 °C coolant temperature, it lights an overheat warning lamp.
+- **ESP32, for remote access.** It receives the coolant temperature from the Arduino over a serial link and publishes it to a Thinger.io dashboard. The dashboard also has a switch for the warning lamp.
+
+On the hardware side, a rectifier provides a 12 V DC bus for the pump, fan, valve motor and lamp, and LM7805 regulators provide 5 V for the sensors and relay coils. Transistor switches drive the pump and fan. A pair of relays reverses the valve motor so it can open or close. The lamp's two transistors, one driven by each microcontroller, sit in series and act as an AND gate, so the owner can switch the warning off remotely without overriding the local logic that turns it on.
+
+## Results
+
+The full interfacing circuit was designed and documented, the firmware for both boards was written in the Arduino IDE, the ESP32 firmware compiled, and the Thinger.io dashboard was set up with a coolant temperature widget and the lamp switch. I also wrote a PID version of the Arduino firmware that drives the fan by PWM toward a 50 °C coolant setpoint, in place of simple on/off thresholds.
+
+## Why it matters
+
+Overheating is the main way a laser engraver damages itself, and a cooling loop that only reacts to fixed thresholds wastes energy and leaves the operator blind when they are away from the machine. Separating local safety control from cloud access keeps the machine protected even when the network is down, and the remote dashboard gives the owner a view of the coolant temperature from anywhere. The same pairing of a microcontroller with a remote monitoring layer is the core of my [Microgrid Digital Twin](/projects/microgrid-digital-twin/).
