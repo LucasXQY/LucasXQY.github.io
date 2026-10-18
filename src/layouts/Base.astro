@@ -1,0 +1,110 @@
+---
+import '@fontsource-variable/inter';
+import '@fontsource-variable/jetbrains-mono';
+import '../styles/global.css';
+import Footer from '../components/Footer.astro';
+import Nav from '../components/Nav.astro';
+import Terminal from '../components/Terminal.astro';
+import { loadMisc } from '../lib/data';
+import { isMiscEmpty } from '../lib/misc';
+import { SITE_TITLE, SITE_URL } from '../site.config';
+
+interface Props {
+  title: string;
+  description: string;
+  noindex?: boolean;
+  /** Structured data for the page, rendered as a JSON-LD script. */
+  jsonLd?: object;
+}
+
+const { title, description, noindex = false, jsonLd } = Astro.props;
+
+// Social cards and canonical links need absolute URLs. Astro.site is the `site` in astro.config.mjs.
+const site = Astro.site ?? SITE_URL;
+const pageUrl = new URL(Astro.url.pathname, site).href;
+const ogImage = new URL('/og.png', site).href;
+// "<" is escaped so a string in the data can never close the script element.
+const jsonLdText = jsonLd && JSON.stringify(jsonLd).replace(/</g, '\\u003c');
+
+// The nav links to /misc/ only once src/data/misc.yaml has something to show. While it is empty the
+// page is still built (the footer stars open the same achievements panel in a dialog), so this
+// flips to true by itself the day the file gets content.
+const showMisc = !isMiscEmpty(loadMisc());
+
+// The inline script in <head> runs before first paint so the page never flashes the wrong theme.
+// It repeats the key and default of src/lib/theme.ts: dark on a first visit whatever the system
+// colour scheme says, and only a stored choice overrides that. The storage read is guarded so a
+// blocked localStorage cannot throw.
+---
+
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    {noindex ? <meta name="robots" content="noindex" /> : <link rel="canonical" href={pageUrl} />}
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={SITE_TITLE} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={pageUrl} />
+    <meta property="og:image" content={ogImage} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    {jsonLdText && <script is:inline type="application/ld+json" set:html={jsonLdText} />}
+    <script is:inline>
+      (function () {
+        var theme = 'dark';
+        try {
+          var stored = localStorage.getItem('qx.theme');
+          if (stored === 'dark' || stored === 'light') theme = stored;
+        } catch (e) {}
+        document.documentElement.dataset.theme = theme;
+      })();
+    </script>
+  </head>
+  <body>
+    <Nav current={Astro.url.pathname} showMisc={showMisc} />
+    <main>
+      <slot />
+    </main>
+    <Terminal />
+    <Footer />
+  </body>
+</html>
+
+<script>
+  import { store } from '../lib/achievements';
+  import { toggleCat } from '../lib/eggs/cat';
+  import { installConsoleEgg } from '../lib/eggs/console';
+  import { createSequenceWatcher } from '../lib/eggs/sequence';
+
+  installConsoleEgg(window, (line) => console.log(line), store);
+
+  // Typing "cat" anywhere outside a text field calls in the pixel cat; typing it again sends it
+  // away. The Misc page button calls the same toggle.
+  document.addEventListener('keydown', createSequenceWatcher('cat', toggleCat));
+  (window as Window & { qxToggleCat?: () => void }).qxToggleCat = toggleCat;
+</script>
+
+<style>
+  body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  main {
+    flex: 1;
+    width: 100%;
+    max-width: var(--content-max);
+    margin-inline: auto;
+    padding: 40px var(--page-pad);
+  }
+</style>

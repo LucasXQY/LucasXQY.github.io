@@ -1,0 +1,179 @@
+---
+// The six footer stars, as one button that opens the achievements panel in a modal <dialog>. The
+// button's label carries the count (the stars themselves are decoration), and the script keeps it
+// and the lit stars in step with the store. Escape and the close button close the dialog, and
+// focus goes back to the stars. `.egg` hides both in print.
+import { ACHIEVEMENTS } from '../lib/achievements';
+import AchievementsPanel from './AchievementsPanel.astro';
+---
+
+<button
+  type="button"
+  class="stars stars-btn egg"
+  aria-haspopup="dialog"
+  aria-label={`Curiosity: 0 of ${ACHIEVEMENTS.length} — open the achievements panel`}
+>
+  {ACHIEVEMENTS.map((id) => (
+    <span class="star" data-id={id} aria-hidden="true">
+      ★
+    </span>
+  ))}
+</button>
+
+<dialog class="ach-dialog egg" aria-labelledby="ach-dialog-title">
+  <div class="ach-dialog-body">
+    <div class="ach-dialog-head">
+      <h2 id="ach-dialog-title">Achievements</h2>
+      <button type="button" class="ach-close" aria-label="Close achievements">
+        <span aria-hidden="true">×</span>
+      </button>
+    </div>
+    <AchievementsPanel />
+  </div>
+</dialog>
+
+<script>
+  import { ACHIEVEMENTS, store } from '../lib/achievements';
+
+  const button = document.querySelector<HTMLButtonElement>('.stars-btn');
+  const dialog = document.querySelector<HTMLDialogElement>('.ach-dialog');
+
+  if (button) {
+    store.subscribe((ids) => {
+      button.querySelectorAll<HTMLElement>('.star').forEach((star) => {
+        star.classList.toggle(
+          'lit',
+          ids.some((id) => id === star.dataset.id),
+        );
+      });
+      button.setAttribute(
+        'aria-label',
+        `Curiosity: ${ids.length} of ${ACHIEVEMENTS.length} — open the achievements panel`,
+      );
+    });
+  }
+
+  if (button && dialog) {
+    button.addEventListener('click', () => {
+      if (!dialog.open) dialog.showModal();
+    });
+    dialog.querySelector('.ach-close')?.addEventListener('click', () => dialog.close());
+
+    // A click on the backdrop reports the dialog itself as its target. Requiring the press to have
+    // started there too keeps a text selection that ends outside the box from closing it.
+    let pressedBackdrop = false;
+    dialog.addEventListener('pointerdown', (event) => {
+      pressedBackdrop = event.target === dialog;
+    });
+    dialog.addEventListener('click', (event) => {
+      if (pressedBackdrop && event.target === dialog) dialog.close();
+      pressedBackdrop = false;
+    });
+
+    // The terminal cannot open behind a modal dialog: everything outside it is inert. The riddle
+    // for that star is on this panel, so the backtick key closes the panel and opens the terminal.
+    dialog.addEventListener('keydown', (event) => {
+      if (event.key !== '`' || event.ctrlKey || event.altKey || event.metaKey) return;
+      event.preventDefault();
+      event.stopPropagation(); // the terminal's own document listener must not also see it
+      dialog.close();
+      (window as Window & { qxOpenTerminal?: () => void }).qxOpenTerminal?.();
+    });
+
+    // The browser puts focus back on whatever opened the dialog, except where a click does not
+    // focus a button (Safari). Fall back to the stars only when nothing holds focus, so a terminal
+    // or cat that took it on the way out keeps it.
+    dialog.addEventListener('close', () => {
+      const active = document.activeElement;
+      if (!active || active === document.body) button.focus();
+    });
+  }
+</script>
+
+<style>
+  .stars-btn {
+    display: inline-flex;
+    gap: 6px;
+    /* Padding makes the target at least 24px tall; the negative margin keeps the footer's layout. */
+    margin: -6px -8px;
+    padding: 6px 8px;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: inherit;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .star {
+    color: var(--text-3);
+    opacity: 0.45;
+    transition:
+      color 0.3s,
+      opacity 0.3s;
+  }
+
+  .star.lit {
+    color: var(--star);
+    opacity: 1;
+  }
+
+  /* The dialog sits inside the footer, which sets 12px mono grey type; start again from the body's. */
+  .ach-dialog {
+    width: min(30rem, calc(100vw - 32px));
+    max-height: calc(100vh - 32px);
+    max-height: calc(100dvh - 32px);
+    padding: 0;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    box-shadow: 0 16px 48px rgb(0 0 0 / 0.4);
+    color: var(--text-1);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  .ach-dialog::backdrop {
+    background: rgb(0 0 0 / 0.6);
+  }
+
+  .ach-dialog-body {
+    padding: 18px 20px 20px;
+  }
+
+  .ach-dialog-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .ach-dialog-head h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  .ach-close {
+    flex: none;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-1);
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .ach-close:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+</style>

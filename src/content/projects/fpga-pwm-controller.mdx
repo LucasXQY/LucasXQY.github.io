@@ -1,0 +1,46 @@
+---
+title: 'FPGA PWM Communication Controller'
+summary: 'A Verilog controller on a DE10-Standard FPGA that sends ASCII characters as pulse widths and decodes them back, checked in simulation and on the board.'
+cover: ../../assets/projects/fpga-pwm-controller/cover.jpg
+tags: ['fpga', 'verilog']
+date: '2023-09'
+status: done
+featured: false
+---
+
+import { Image } from 'astro:assets';
+import scope from '../../assets/projects/fpga-pwm-controller/oscilloscope.jpg';
+
+## The project
+
+This was the open-ended final project for Digital System Design at Xiamen University Malaysia, built in a team of three during the September 2023 term. We designed a pulse-width modulation (PWM) communication controller on a DE10-Standard development board that transmits ASCII characters and recovers them at the other end at 9600 baud.
+
+## How it works
+
+The design is written in Verilog and split into four modules:
+
+- **Clock divider.** Derives a slower working clock from the board's 50 MHz oscillator for the rest of the design.
+- **Binary to ASCII.** Maps the 8-bit value set on the board's switches to the character it stands for.
+- **Encoder.** Counts through a 128-tick frame and holds the line high for as many ticks as the character's code, so the pulse width carries the value.
+- **Decoder.** Counts the high ticks in each frame and outputs that count as the recovered byte, which is shown on the board's LEDs.
+
+A second top-level design splits the controller into a sender and a receiver with their own pins, so one board can send a character with a key press and another can show what it received.
+
+## Results
+
+A Verilog testbench sent characters through the encoder and decoder, and the decoder returned the correct ASCII code for each one, such as 00101010 for `*` and 01000010 for `B`. On the board, characters set on the switches were sent through the full pipeline and shown again on the LEDs, with the link running at the 9600 baud the project set out to reach.
+
+<figure>
+  <Image
+    src={scope}
+    width={720}
+    alt="Oscilloscope screen showing the controller's output signal captured from the FPGA board"
+  />
+  <figcaption>
+    The controller's output signal on an oscilloscope during testing on the board.
+  </figcaption>
+</figure>
+
+## Why it matters
+
+Carrying a value in a pulse width keeps the signal digital from end to end, so small amounts of noise do not change what the receiver reads. The project was my first full pass through hardware design, from module partitioning to testbench simulation and checks on the board, and the same habit of checking a design both in simulation and on hardware carried into my later embedded work, such as the solar-tracking firmware in the [Microgrid Digital Twin](/projects/microgrid-digital-twin/).

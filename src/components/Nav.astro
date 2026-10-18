@@ -1,0 +1,302 @@
+---
+import ThemeToggle from './ThemeToggle.astro';
+import { chirpPath } from '../lib/waveform';
+import { SITE_TITLE } from '../site.config';
+
+interface Props {
+  /** Pathname of the page being rendered, e.g. `/publications/`. */
+  current: string;
+  showMisc: boolean;
+}
+
+const { current, showMisc } = Astro.props;
+
+const links = [
+  { label: 'About', href: '/', misc: false },
+  { label: 'Publications', href: '/publications/', misc: false },
+  { label: 'Projects', href: '/projects/', misc: false },
+  { label: 'CV', href: '/cv/', misc: false },
+  ...(showMisc ? [{ label: 'Misc', href: '/misc/', misc: true }] : []),
+];
+
+const here = current.endsWith('/') ? current : `${current}/`;
+const isCurrent = (href: string) => (href === '/' ? here === '/' : here.startsWith(href));
+
+const wave = chirpPath(1100, 60);
+---
+
+<nav class="nav" aria-label="Primary">
+  <div class="nav-inner">
+    <a class="brand" href="/">
+      <span class="brand-full">{SITE_TITLE}</span>
+      <span class="brand-short">QX</span>
+    </a>
+    <div class="nav-right">
+      <ul class="links">
+        {links.map((link) => (
+          <li>
+            <a
+              href={link.href}
+              class:list={{ misc: link.misc }}
+              aria-current={isCurrent(link.href) ? 'page' : undefined}
+            >
+              {link.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+      <ThemeToggle />
+    </div>
+  </div>
+  <!-- Last in the DOM, so it is the last Tab stop. It is painted under .nav-inner, which lets
+       clicks through except on the brand, links and toggle: only the empty nav area plays. -->
+  <button type="button" class="nav-wave-btn egg" aria-label="Play a gravitational-wave chirp">
+    <svg class="nav-wave" viewBox="0 0 1100 60" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <path id="nav-wave-line" class="nav-wave-line" d={wave}></path>
+        <linearGradient id="nav-wave-fade">
+          <stop offset="0" stop-color="#fff" stop-opacity="0"></stop>
+          <stop offset="0.8" stop-color="#fff"></stop>
+          <stop offset="1" stop-color="#fff" stop-opacity="0"></stop>
+        </linearGradient>
+        <!-- The sweep: a soft-edged band that CSS slides left to right over the glow copy. -->
+        <mask id="nav-wave-light" maskUnits="userSpaceOnUse" x="0" y="0" width="1100" height="60">
+          <rect
+            class="nav-wave-shine"
+            x="-300"
+            y="0"
+            width="300"
+            height="60"
+            fill="url(#nav-wave-fade)"
+          ></rect>
+        </mask>
+      </defs>
+      <use href="#nav-wave-line" class="nav-wave-base"></use>
+      <use href="#nav-wave-line" class="nav-wave-glow" mask="url(#nav-wave-light)"></use>
+    </svg>
+  </button>
+</nav>
+
+<script>
+  import { store } from '../lib/achievements';
+  import { playChirp } from '../lib/eggs/chirp';
+
+  const SWEEP_MS = 800; // the length of the chirp
+  const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+  const button = document.querySelector<HTMLButtonElement>('.nav-wave-btn');
+  const wave = button?.querySelector<SVGSVGElement>('.nav-wave');
+
+  if (button && wave) {
+    let ctx: AudioContext | null = null; // made on the first click, which is the user gesture
+    let busy = false;
+
+    /** Never rejects. Where there is no Web Audio, or it refuses, there is just no sound. */
+    const sound = async (): Promise<void> => {
+      try {
+        if (typeof AudioContext === 'undefined') return;
+        ctx ??= new AudioContext();
+        await playChirp(ctx);
+      } catch {
+        // The star and the sweep do not depend on the speaker.
+      }
+    };
+
+    button.addEventListener('click', () => {
+      if (busy) return;
+      busy = true;
+      store.unlock('chirp');
+
+      // Sound first: making the first AudioContext can hold this thread for a few hundred ms, and
+      // the sweep, with its 0.8 s timer, should start when the sound does rather than before it.
+      const playing = sound();
+
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        wave.classList.add('sweep');
+        setTimeout(() => wave.classList.remove('sweep'), SWEEP_MS);
+      }
+
+      // Free again once the sound and the sweep are done. The cap keeps a context that never
+      // reports "ended" (a suspended tab, say) from locking the button for good.
+      void Promise.race([Promise.all([playing, wait(SWEEP_MS)]), wait(SWEEP_MS + 1000)]).then(
+        () => {
+          busy = false;
+        },
+      );
+    });
+  }
+</script>
+
+<style>
+  .nav {
+    position: relative;
+    isolation: isolate; /* keeps the z-index layering below inside the nav */
+    height: var(--nav-h);
+    overflow: hidden;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-wave-btn {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    display: block;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent; /* no grey flash over the whole nav on touch */
+  }
+
+  /* Inset, so the ring is inside the button and overflow: hidden cannot clip it. */
+  .nav-wave-btn:focus-visible {
+    outline-offset: -4px;
+  }
+
+  .nav-wave {
+    display: block;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+
+  .nav-wave-line {
+    fill: none;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .nav-wave-base {
+    stroke: var(--accent);
+    stroke-width: 1.5;
+    opacity: 0.22;
+  }
+
+  /* The same line, brighter and thicker, seen only through the sweeping mask band. At rest the
+     band sits off the left edge, so nothing shows. The sweep animates transform only. */
+  .nav-wave-glow {
+    stroke: var(--accent);
+    stroke-width: 3;
+  }
+
+  .nav-wave.sweep .nav-wave-shine {
+    animation: nav-wave-sweep 0.8s linear;
+  }
+
+  @keyframes nav-wave-sweep {
+    to {
+      transform: translateX(1400px);
+    }
+  }
+
+  /* Above the button but click-through: only what is switched back on below takes clicks. */
+  .nav-inner {
+    position: relative;
+    z-index: 1;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    height: 100%;
+    max-width: var(--content-max);
+    margin-inline: auto;
+    padding-inline: var(--page-pad);
+  }
+
+  .brand,
+  .nav-right > :global(*) {
+    pointer-events: auto;
+  }
+
+  .brand {
+    position: relative;
+    flex-shrink: 0;
+    color: var(--text-1);
+    font-size: 18px;
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  /* Narrow screens show the monogram so the links and toggle fit in 60px of height and 320px+.
+     The full name stays in the accessibility tree as visually hidden text, so the link's name
+     always contains what is on screen (WCAG 2.5.3): "QX" there, the full name from 640px up. */
+  .brand-full {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-width: 0;
+  }
+
+  .links {
+    display: flex;
+    gap: 14px;
+    min-width: 0;
+    /* overflow-x clips on all four sides, so the padding leaves room for the 4px focus ring and
+       the negative margin keeps the links where they were. */
+    margin: -4px;
+    padding: 4px;
+    overflow-x: auto;
+    list-style: none;
+    font-size: 14px;
+    scrollbar-width: none;
+  }
+
+  .links a {
+    color: var(--text-2);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .links a:hover {
+    color: var(--text-1);
+  }
+
+  .links a.misc {
+    color: var(--accent-2);
+  }
+
+  .links a[aria-current='page'] {
+    text-decoration: underline;
+    text-decoration-color: currentColor;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 6px;
+  }
+
+  .links a[aria-current='page']:not(.misc) {
+    color: var(--accent);
+  }
+
+  @media (min-width: 640px) {
+    .brand-full {
+      position: static;
+      width: auto;
+      height: auto;
+      margin: 0;
+      overflow: visible;
+      clip-path: none;
+    }
+
+    .brand-short {
+      display: none;
+    }
+
+    .links {
+      gap: 28px;
+      font-size: 15px;
+    }
+  }
+</style>

@@ -1,0 +1,15 @@
+name: 'Qiyi (Lucas) Xie'
+tagline: 'Reliable visual/signal restoration and detection under low-quality or low-SNR conditions'
+bio:
+  - "I'm an M.S.E. student (Fall 2025 – now) in Electrical Engineering at the University of Pennsylvania, concentrating in artificial intelligence. I am applying to PhD programs for Fall 2027."
+  - 'My interests revolve around reliable restoration and detection under low-quality or low-SNR conditions: low-light image enhancement with physics-inspired and selective generative methods, and gravitational-wave signal detection on time–frequency maps.'
+  - "I work on low-light image enhancement with Dr. Jian Ding Tan's group at the S.M.A.R.T. Nexus Centre of Excellence, Xiamen University Malaysia, where I have been a research assistant since 2024 and am grateful to be advised by him, and on gravitational-wave transient detection with Dr. Fan Zhang. I received my bachelor's degree in Electrical and Electronic Engineering from Xiamen University Malaysia."
+affiliation: 'M.S.E. in Electrical Engineering, University of Pennsylvania'
+priorDegree: 'B.Eng. (Hons) in Electrical and Electronic Engineering, Xiamen University Malaysia'
+status: 'PhD applicant, Fall 2027'
+email: 'xieqiyi@ieee.org'
+headshot: 'src/assets/headshot.webp'
+links:
+  orcid: 'https://orcid.org/0009-0006-9506-8359'
+  researchgate: 'https://www.researchgate.net/profile/Qiyi-Xie-4'
+  linkedin: 'https://www.linkedin.com/in/lucas-xie-75404025a'

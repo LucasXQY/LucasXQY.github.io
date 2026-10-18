@@ -1,0 +1,35 @@
+---
+title: 'Microgrid Digital Twin'
+summary: 'A Unity-based digital twin for remote monitoring of a wind and photovoltaic microgrid powering a charging unit.'
+cover: ../../assets/projects/microgrid-digital-twin/cover.jpg
+tags: ['digital-twin', 'embedded']
+date: '2024-04'
+status: done
+featured: false
+---
+
+import { Image } from 'astro:assets';
+import pvTracker from '../../assets/projects/microgrid-digital-twin/pv-tracker.png';
+
+## The project
+
+I designed and led this undergraduate research project at the School of Artificial Intelligence and Robotics, Xiamen University Malaysia, from April 2024 to January 2025. The system is a charging unit powered by renewable energy from a microgrid of wind turbines and photovoltaic panels, paired with a digital twin for remote monitoring.
+
+## How it works
+
+On the physical side, I wrote the solar-tracking firmware in C for an ESP32 microcontroller, integrating photoelectric sensors so the panels follow the sun at an efficient angle. On the digital side, I built 3D models of the photovoltaic components in SolidWorks and simulated their operation in a Unity-based digital twin. The twin mirrors the microgrid in real time for monitoring and supports performance analysis of its solar and wind sources.
+
+<figure>
+  <Image
+    src={pvTracker}
+    width={720}
+    alt="SolidWorks model of a three-panel solar array on a single-post tracking mount"
+  />
+  <figcaption>
+    The SolidWorks model of the solar-tracking photovoltaic array used in the digital twin.
+  </figcaption>
+</figure>
+
+## Why it matters
+
+A digital twin makes a renewable installation observable without anyone on site, which keeps monitoring and maintenance costs low. The project ran alongside my 2024 papers on digital-twin systems for human–robot collaboration and smart farming, which examine the same technology in other application areas.

@@ -1,0 +1,102 @@
+---
+// A decorative black hole for the 404 page: a dark disc inside a slowly spinning accretion ring.
+// The ring is a cyan-to-violet gradient stroke, so rotating it visibly sweeps the colours around.
+// Under prefers-reduced-motion the global rule in global.css turns the spin off. `.egg` hides it
+// when printing.
+---
+
+<div class="blackhole egg">
+  <svg viewBox="0 0 240 240" width="240" height="240" aria-hidden="true" focusable="false">
+    <defs>
+      <linearGradient
+        id="blackhole-gradient"
+        gradientUnits="userSpaceOnUse"
+        x1="20"
+        y1="120"
+        x2="220"
+        y2="120"
+      >
+        <stop class="stop-start" offset="0"></stop>
+        <stop class="stop-end" offset="1"></stop>
+      </linearGradient>
+      <radialGradient id="blackhole-disc" cx="50%" cy="50%" r="50%">
+        <stop offset="0" stop-color="#000000"></stop>
+        <stop offset="0.8" stop-color="#000000"></stop>
+        <stop offset="1" stop-color="#0b0f14"></stop>
+      </radialGradient>
+    </defs>
+
+    <circle class="glow" cx="120" cy="120" r="84"></circle>
+    <g class="blackhole-ring">
+      <circle
+        class="ring outer"
+        cx="120"
+        cy="120"
+        r="96"
+        stroke="url(#blackhole-gradient)"
+        stroke-dasharray="250 40 130 30"
+      ></circle>
+      <circle
+        class="ring inner"
+        cx="120"
+        cy="120"
+        r="80"
+        stroke="url(#blackhole-gradient)"
+        stroke-dasharray="90 24 190 36"
+      ></circle>
+    </g>
+    <circle cx="120" cy="120" r="64" fill="url(#blackhole-disc)"></circle>
+  </svg>
+</div>
+
+<style>
+  .blackhole {
+    margin-bottom: 28px;
+    line-height: 0;
+  }
+
+  svg {
+    display: block;
+  }
+
+  .stop-start {
+    stop-color: var(--accent);
+  }
+
+  .stop-end {
+    stop-color: var(--accent-2);
+  }
+
+  .glow {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 18;
+    opacity: 0.12;
+  }
+
+  .ring {
+    fill: none;
+    stroke-linecap: round;
+  }
+
+  .outer {
+    stroke-width: 6;
+  }
+
+  .inner {
+    stroke-width: 3;
+    opacity: 0.7;
+  }
+
+  .blackhole-ring {
+    transform-box: view-box;
+    transform-origin: 50% 50%;
+    animation: spin 12s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+</style>

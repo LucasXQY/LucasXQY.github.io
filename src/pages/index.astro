@@ -1,0 +1,87 @@
+---
+import Base from '../layouts/Base.astro';
+import NewsList from '../components/NewsList.astro';
+import PubList from '../components/PubList.astro';
+import Sidebar from '../components/Sidebar.astro';
+import { cvPdfExists, loadNews, loadProfile, loadPublications } from '../lib/data';
+import { filterPublications, sortPublications } from '../lib/publications';
+import { SITE_TITLE, SITE_URL } from '../site.config';
+
+const profile = loadProfile();
+const news = loadNews();
+const selected = filterPublications(sortPublications(loadPublications()), 'selected');
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: profile.name,
+  jobTitle: profile.status,
+  affiliation: { '@type': 'Organization', name: 'University of Pennsylvania' },
+  url: SITE_URL,
+  email: `mailto:${profile.email}`,
+  sameAs: Object.values(profile.links).filter((link): link is string => link !== undefined),
+};
+---
+
+<Base title={SITE_TITLE} description={profile.tagline} jsonLd={jsonLd}>
+  <div class="home">
+    <Sidebar profile={profile} cvPdf={cvPdfExists()} />
+    <div class="content" data-testid="home-content">
+      <section class="block">
+        <h2>About</h2>
+        {profile.bio.map((paragraph) => (
+          <p class="bio">{paragraph}</p>
+        ))}
+      </section>
+      <section class="block">
+        <h2>News</h2>
+        <NewsList items={news} />
+      </section>
+      <section class="block">
+        <h2>Selected Publications</h2>
+        <PubList pubs={selected} groupByYear={false} />
+        <p class="all">
+          <a href="/publications/">See all publications →</a>
+        </p>
+      </section>
+    </div>
+  </div>
+</Base>
+
+<style>
+  /* Sidebar first in the DOM, so a single column stacks it above the content. */
+  .home {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 40px;
+  }
+
+  @media (min-width: 960px) {
+    .home {
+      grid-template-columns: 256px minmax(0, 1fr);
+      gap: 56px;
+    }
+  }
+
+  .block {
+    margin-bottom: 28px;
+  }
+
+  .block h2 {
+    margin: 0 0 10px;
+    font-size: 19px;
+    font-weight: 700;
+  }
+
+  .bio {
+    margin: 0 0 12px;
+    color: var(--text-2);
+    font-size: 15px;
+    line-height: 1.65;
+  }
+
+  .all {
+    margin: 14px 0 0;
+    font-size: 14.5px;
+  }
+</style>

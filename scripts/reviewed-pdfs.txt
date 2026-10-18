@@ -1,0 +1,8 @@
+# PDFs the owner has checked by hand. scripts/check-private.mjs fails on any committed PDF whose
+# sha256 is not listed here.
+#
+# Add a PDF's hash only after reading the whole file and confirming that it holds no phone number,
+# no street or home address and no grades. A changed PDF has a new hash, so check it again.
+#
+# One lowercase or uppercase sha256 per line, e.g. from `sha256sum public/cv.pdf` or, in
+# PowerShell, `Get-FileHash public/cv.pdf`. Anything after # is a comment.

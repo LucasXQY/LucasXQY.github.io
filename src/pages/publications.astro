@@ -1,0 +1,101 @@
+---
+import Base from '../layouts/Base.astro';
+import PubList from '../components/PubList.astro';
+import { loadPublications } from '../lib/data';
+import { sortPublications } from '../lib/publications';
+import { SITE_TITLE } from '../site.config';
+
+const pubs = sortPublications(loadPublications());
+
+const filters = [
+  { value: 'all', label: 'All' },
+  { value: 'first-author', label: 'First author' },
+  { value: 'selected', label: 'Selected' },
+] as const;
+---
+
+<Base
+  title={`Publications · ${SITE_TITLE}`}
+  description="Journal articles, conference papers and preprints by Qiyi (Lucas) Xie."
+>
+  <h1>Publications</h1>
+  <div class="filters" role="group" aria-label="Filter publications">
+    {filters.map((filter) => (
+      <button
+        type="button"
+        class="filter mono"
+        data-filter={filter.value}
+        aria-pressed={filter.value === 'all' ? 'true' : 'false'}
+      >
+        {filter.label}
+      </button>
+    ))}
+  </div>
+  <PubList pubs={pubs} groupByYear={true} />
+</Base>
+
+<script>
+  const buttons = document.querySelectorAll<HTMLButtonElement>('button[data-filter]');
+  const entries = document.querySelectorAll<HTMLElement>('article[data-first-author]');
+  const groups = document.querySelectorAll<HTMLElement>('[data-year-group]');
+
+  function apply(mode: string) {
+    for (const entry of entries) {
+      const dataset = entry.dataset;
+      entry.hidden =
+        (mode === 'first-author' && dataset.firstAuthor !== 'true') ||
+        (mode === 'selected' && dataset.selected !== 'true');
+    }
+    // A year whose entries are all filtered out loses its heading too.
+    for (const group of groups) {
+      const heading = group.querySelector<HTMLElement>('h2');
+      if (heading) heading.hidden = group.querySelector('article:not([hidden])') === null;
+    }
+    for (const button of buttons) {
+      button.setAttribute('aria-pressed', String(button.dataset.filter === mode));
+    }
+  }
+
+  for (const button of buttons) {
+    button.addEventListener('click', () => apply(button.dataset.filter ?? 'all'));
+  }
+</script>
+
+<style>
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .filter {
+    min-height: 28px;
+    padding: 0 12px;
+    border: 1px solid var(--text-3);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-2);
+    font-size: 12px;
+    line-height: 1.4;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .filter:hover {
+    border-color: var(--text-2);
+    color: var(--text-1);
+  }
+
+  .filter[aria-pressed='true'] {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
+    color: var(--accent);
+  }
+
+  @media print {
+    .filters {
+      display: none;
+    }
+  }
+</style>

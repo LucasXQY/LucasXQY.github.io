@@ -1,0 +1,54 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Least privilege: the build job only reads the repository. The Pages and OIDC token rights are
+# granted to the deploy job alone.
+permissions:
+  contents: read
+
+# One deployment at a time; let a running deployment finish instead of cancelling it.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # Privacy scan, unit tests and type check gate the deploy.
+      # The Playwright e2e suite is not run here (it would need browsers installed).
+      # Run `npm run build && npm run test:e2e` locally before pushing.
+      - run: npm run check:private
+      - run: npm test
+      - run: npm run check
+      # The site address is built from GITHUB_USERNAME, so never deploy with the placeholder.
+      - name: Check that GITHUB_USERNAME is set
+        run: if grep -q TODO-github-username src/site.config.ts; then echo "set GITHUB_USERNAME in src/site.config.ts first"; exit 1; fi
+      # Builds the site (default `npm run build`) and uploads the Pages artifact.
+      # The action's own default is Node 20, but Astro 7 needs Node 22.22 or newer.
+      - uses: withastro/action@v3
+        with:
+          node-version: 24
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

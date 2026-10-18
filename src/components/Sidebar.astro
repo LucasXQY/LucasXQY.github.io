@@ -1,0 +1,302 @@
+---
+import { Image } from 'astro:assets';
+import { resolveAsset } from '../lib/assets';
+import type { Profile } from '../schemas';
+
+interface Props {
+  profile: Profile;
+  cvPdf: boolean;
+}
+
+const { profile, cvPdf } = Astro.props;
+
+// A headshot path that matches no file rejects here, which fails the build.
+const headshot = profile.headshot ? await resolveAsset(profile.headshot) : undefined;
+
+// First letters of the first and last words, ignoring a parenthesised nickname:
+// "Qiyi (Lucas) Xie" gives "QX".
+const words = profile.name
+  .replace(/\([^)]*\)/g, ' ')
+  .split(/\s+/)
+  .filter(Boolean);
+const initials = [words[0], words.length > 1 ? words[words.length - 1] : undefined]
+  .map((word) => (word ? Array.from(word)[0]!.toUpperCase() : ''))
+  .join('');
+
+const { links } = profile;
+
+// "Degree, Institution" renders as two lines: the degree, then the institution.
+const splitFact = (text: string): [string, string | undefined] => {
+  const i = text.indexOf(', ');
+  return i === -1 ? [text, undefined] : [text.slice(0, i), text.slice(i + 2)];
+};
+const facts: { label: string; text: string }[] = [{ label: 'now', text: profile.affiliation }];
+if (profile.priorDegree) facts.push({ label: 'before', text: profile.priorDegree });
+
+// Each link exists only when its data does; external ones carry rel="me noopener".
+// Links render as small icons in a row: a glyph for email and the CV, a letter mark for the
+// profiles. The visible mark is part of the accessible name (WCAG 2.5.3), followed by the full
+// label in visually hidden text.
+type Icon = 'mail' | 'doc' | { mark: string };
+const items: { label: string; href: string; external: boolean; icon: Icon }[] = [
+  { label: 'Email', href: `mailto:${profile.email}`, external: false, icon: 'mail' },
+];
+if (links.scholar)
+  items.push({
+    label: 'Google Scholar',
+    href: links.scholar,
+    external: true,
+    icon: { mark: 'GS' },
+  });
+if (links.github)
+  items.push({ label: 'GitHub', href: links.github, external: true, icon: { mark: 'GH' } });
+if (links.orcid)
+  items.push({ label: 'ORCID', href: links.orcid, external: true, icon: { mark: 'iD' } });
+if (links.linkedin)
+  items.push({ label: 'LinkedIn', href: links.linkedin, external: true, icon: { mark: 'in' } });
+if (links.researchgate)
+  items.push({
+    label: 'ResearchGate',
+    href: links.researchgate,
+    external: true,
+    icon: { mark: 'RG' },
+  });
+if (cvPdf) items.push({ label: 'CV (PDF)', href: '/cv.pdf', external: false, icon: 'doc' });
+---
+
+<div class="sidebar" data-testid="sidebar">
+  {headshot ? (
+    <div class="photo">
+      <Image
+        src={headshot}
+        width={190}
+        height={190}
+        densities={[1, 2]}
+        loading="eager"
+        alt={`Portrait of ${profile.name}`}
+      />
+    </div>
+  ) : (
+    <div class="photo initials" aria-hidden="true">
+      {initials}
+    </div>
+  )}
+  <h1 class="name">{profile.name}</h1>
+  <dl class="facts">
+    {facts.map(({ label, text }) => {
+      const [degree, institution] = splitFact(text);
+      return (
+        <div class="fact">
+          <dt class="mono">{label}</dt>
+          <dd>
+            <span class="degree">{degree}</span>
+            {institution && <span class="institution">{institution}</span>}
+          </dd>
+        </div>
+      );
+    })}
+  </dl>
+  <ul class="links" aria-label="Profile links">
+    {items.map((item) => (
+      <li>
+        <a href={item.href} rel={item.external ? 'me noopener' : undefined} title={item.label}>
+          {item.icon === 'mail' ? (
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <rect x="3" y="5" width="18" height="14" rx="2" />
+              <path d="M3.5 6.5 12 13l8.5-6.5" />
+            </svg>
+          ) : item.icon === 'doc' ? (
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M7 3h7l5 5v13H7z" />
+              <path d="M14 3v5h5M9.5 12h7M9.5 16h7" />
+            </svg>
+          ) : (
+            <span class="mark">{item.icon.mark}</span>
+          )}
+          <span class="sr-only">{item.label}</span>
+        </a>
+      </li>
+    ))}
+  </ul>
+</div>
+
+<style>
+  /* Narrow screens stack the sidebar above the content, so it is centred; from 960px it is a
+     left-aligned column. */
+  .sidebar {
+    text-align: center;
+  }
+
+  .photo {
+    width: 140px;
+    height: 140px;
+    margin-inline: auto;
+    overflow: hidden;
+    border: 2px solid var(--accent);
+    border-radius: 50%;
+    box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent) 8%, transparent);
+  }
+
+  /* The <Image> component renders its <img> itself, so scoped selectors cannot reach it. */
+  .photo :global(img) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .initials {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface);
+    color: var(--accent);
+    font-size: 40px;
+    font-weight: 700;
+  }
+
+  .name {
+    margin: 22px 0 0;
+    font-size: 26px;
+    font-weight: 700;
+  }
+
+  /* Two short facts with tiny mono labels, one line each in the 240px column. The PhD search is
+     stated in the bio, not here. */
+  .facts {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 8px 0 0;
+  }
+
+  .fact {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: baseline;
+    gap: 2px 10px;
+    margin: 0;
+  }
+
+  .fact dt {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+
+  .fact dd {
+    margin: 0;
+    color: var(--text-2);
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .fact dd span {
+    display: block;
+  }
+
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin: 16px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .links a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    color: var(--text-2);
+    text-decoration: none;
+    transition:
+      color 0.2s,
+      border-color 0.2s,
+      background-color 0.2s;
+  }
+
+  .links a:hover,
+  .links a:focus-visible {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
+  }
+
+  .links svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .mark {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  @media (min-width: 960px) {
+    .sidebar {
+      text-align: left;
+    }
+
+    .photo {
+      width: 190px;
+      height: 190px;
+      margin-inline: 0;
+    }
+
+    .initials {
+      font-size: 54px;
+    }
+
+    .name {
+      margin-top: 18px;
+    }
+
+    /* One grid for all rows, so every label shares the column sized by the longest one. */
+    .facts {
+      display: grid;
+      grid-template-columns: max-content minmax(0, 1fr);
+      gap: 6px 8px;
+      margin-left: -10px; /* labels sit a little left of the name so the text column is wider */
+    }
+
+    .fact {
+      display: contents;
+    }
+
+    .fact dt {
+      align-self: baseline;
+    }
+
+    .links {
+      justify-content: flex-start;
+      margin-top: 18px;
+    }
+  }
+</style>

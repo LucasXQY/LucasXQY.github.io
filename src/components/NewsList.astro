@@ -1,0 +1,52 @@
+---
+import type { News } from '../schemas';
+
+interface Props {
+  items: News;
+}
+
+const MAX_ITEMS = 5;
+
+const { items } = Astro.props;
+
+// `YYYY-MM` strings sort correctly as text; the sort is stable, so entries sharing a month keep
+// their order in news.yaml.
+const recent = [...items].sort((a, b) => b.date.localeCompare(a.date)).slice(0, MAX_ITEMS);
+---
+
+<ul class="news">
+  {recent.map((item) => (
+    <li class="item" data-testid="news-item">
+      <span class="date mono">{item.date}</span>
+      <span class="text">{item.link ? <a href={item.link}>{item.text}</a> : item.text}</span>
+    </li>
+  ))}
+</ul>
+
+<style>
+  .news {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 14.5px;
+  }
+
+  .item {
+    display: grid;
+    grid-template-columns: 64px minmax(0, 1fr);
+    gap: 12px;
+    padding: 5px 0;
+  }
+
+  @media (min-width: 640px) {
+    .item {
+      grid-template-columns: 92px minmax(0, 1fr);
+    }
+  }
+
+  .date {
+    padding-top: 2px;
+    color: var(--text-3);
+    font-size: 12.5px;
+  }
+</style>

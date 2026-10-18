@@ -1,0 +1,136 @@
+---
+// The hidden page for visitors who found all six stars. It is not in the nav, and `noindex` plus
+// the sitemap filter in astro.config.mjs keep search engines away.
+//
+// Both of its states are drawn by the script from the achievement store, which only exists in the
+// browser. The HTML that is built has just the heading and the "Nothing here yet" line, so a
+// crawler or a reader without JavaScript sees nothing but that; the bio and the certificate button
+// are created on the page once the store says every star is lit. The heading is the same either way.
+import Base from '../../layouts/Base.astro';
+import { UNLOCKED } from '../../data/eggs';
+import { ACHIEVEMENTS } from '../../lib/achievements';
+import { SITE_TITLE } from '../../site.config';
+---
+
+<Base
+  title={`${UNLOCKED.title} · ${SITE_TITLE}`}
+  description="A hidden page for visitors who found every star."
+  noindex
+>
+  <div class="unlocked">
+    <h1>{UNLOCKED.title}</h1>
+    <p class="locked">
+      Nothing here yet (<span class="found">0</span>/{ACHIEVEMENTS.length}).
+    </p>
+    <div class="reveal" hidden></div>
+  </div>
+</Base>
+
+<script>
+  import { CERTIFICATE_LEAD, UNLOCKED } from '../../data/eggs';
+  import { store } from '../../lib/achievements';
+  import { downloadCertificate, isoDate } from '../../lib/certificate';
+  import { SITE_TITLE } from '../../site.config';
+
+  const locked = document.querySelector<HTMLElement>('.locked');
+  const found = document.querySelector<HTMLElement>('.found');
+  const reveal = document.querySelector<HTMLElement>('.reveal');
+
+  /** Fills the reveal area once. Text goes in with textContent, as with every egg. */
+  function build(target: HTMLElement): void {
+    for (const paragraph of UNLOCKED.bio) {
+      const p = document.createElement('p');
+      p.textContent = paragraph;
+      target.append(p);
+    }
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'certificate-btn';
+    button.textContent = 'Download certificate';
+
+    const status = document.createElement('p');
+    status.className = 'certificate-status';
+    status.setAttribute('role', 'status');
+
+    let busy = false;
+    button.addEventListener('click', async () => {
+      if (busy) return;
+      busy = true;
+      status.textContent = '';
+      try {
+        const ok = await downloadCertificate({
+          title: UNLOCKED.certificateTitle,
+          lead: CERTIFICATE_LEAD,
+          name: SITE_TITLE,
+          date: isoDate(new Date()),
+          stars: store.all().length,
+        });
+        if (!ok) status.textContent = 'This browser could not draw the certificate.';
+      } catch {
+        status.textContent = 'This browser could not draw the certificate.';
+      } finally {
+        busy = false; // an error must not leave the button dead
+      }
+    });
+
+    target.append(button, status);
+  }
+
+  if (locked && found && reveal) {
+    store.subscribe((ids) => {
+      found.textContent = String(ids.length);
+      const done = store.complete();
+      locked.hidden = done;
+      reveal.hidden = !done;
+      if (done && reveal.childElementCount === 0) build(reveal);
+    });
+  }
+</script>
+
+<style>
+  .unlocked {
+    max-width: 40rem;
+  }
+
+  h1 {
+    font-size: clamp(26px, 5vw, 34px);
+    font-weight: 700;
+  }
+
+  .locked {
+    color: var(--text-2);
+  }
+
+  .reveal :global(p) {
+    color: var(--text-2);
+  }
+
+  .reveal :global(.certificate-btn) {
+    min-height: 36px;
+    margin-top: 8px;
+    padding: 0 18px;
+    border: 1px solid var(--accent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .reveal :global(.certificate-btn:hover) {
+    background: color-mix(in srgb, var(--accent) 20%, transparent);
+  }
+
+  .reveal :global(.certificate-status) {
+    margin-top: 10px;
+    font-size: 14px;
+  }
+
+  @media print {
+    .reveal :global(.certificate-btn) {
+      display: none;
+    }
+  }
+</style>

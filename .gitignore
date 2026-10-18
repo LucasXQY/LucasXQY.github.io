@@ -1,0 +1,15 @@
+# private planning material — never commit
+notes/
+docs/superpowers/
+mockups/
+.superpowers/
+.claude/
+
+# build and deps
+node_modules/
+dist/
+.astro/
+playwright-report/
+test-results/
+.env
+.env.*

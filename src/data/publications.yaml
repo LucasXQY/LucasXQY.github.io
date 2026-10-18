@@ -1,0 +1,161 @@
+- id: prin
+  title: 'PRIN: A Perceptual-Structural Retinex-Inspired Network for Low-Light Image Enhancement'
+  authors:
+    - 'Qiyi Xie'
+    - 'Wei Chen Ng'
+    - 'Ziyao Li'
+    - 'Yuning Wu'
+    - 'Huasen Wu'
+    - 'Tianshi Miao'
+    - 'Jian Ding Tan'
+  venue: 'Information Sciences'
+  year: 2026
+  status: under-review
+  type: journal
+  selected: true
+  note: 'second round'
+
+- id: vetonet
+  title: 'When Should a Low-Light Pipeline Generate? Auditable Risk Control for Selective Generative Enhancement'
+  authors:
+    - 'Qiyi Xie'
+    - 'Wei Chen Ng'
+    - 'Suyang Xi'
+    - 'Xicheng Wang'
+    - 'Ziyao Li'
+    - 'Bohong Xu'
+    - 'Wenyi Liu'
+    - 'Jian Ding Tan'
+  venue: 'arXiv:2610.21335'
+  year: 2026
+  status: preprint
+  type: preprint
+  selected: true
+  links:
+    arxiv: 'https://arxiv.org/abs/2610.21335'
+    doi: 'https://doi.org/10.48550/arXiv.2610.21335'
+  note: 'journal version in preparation'
+  bibtex: |
+    @misc{xie2026vetonet,
+      title         = {When Should a Low-Light Pipeline Generate? Auditable Risk Control for Selective Generative Enhancement},
+      author        = {Xie, Qiyi and Ng, Wei Chen and Xi, Suyang and Wang, Xicheng and Li, Ziyao and Xu, Bohong and Liu, Wenyi and Tan, Jian Ding},
+      year          = {2026},
+      eprint        = {2610.21335},
+      archivePrefix = {arXiv},
+      primaryClass  = {cs.CV},
+      doi           = {10.48550/arXiv.2610.21335}
+    }
+- id: gw-yolo
+  title: 'Coherent GW-YOLO: Cross-Detector Coincidence for Time–Frequency Object Detection of Gravitational Waves'
+  authors:
+    - 'Qiyi Xie'
+    - 'et al.'
+  venue: ''
+  year: 2026
+  status: in-preparation
+  type: preprint
+  selected: false
+
+- id: mamba-llie
+  title: 'Stabilizing Illumination Conditioning in SSM-Based Low-Light Image Enhancement with Bottleneck Prompt Sidecars'
+  authors:
+    - 'Wei Chen Ng'
+    - 'Qiyi Xie'
+    - 'Jian Ding Tan'
+    - 'Yan Kang Lee'
+    - 'Hakim Qaid Abdullah Abdulrab'
+    - 'Wei Hown Tee'
+  venue: 'IEEE Transactions on Pattern Analysis and Machine Intelligence'
+  year: 2026
+  status: under-review
+  type: journal
+  selected: true
+
+- id: jepa-review
+  title: 'Predicting Representations, Modeling Worlds, Recovering Causes: A Critical Review of JEPA, World Models, and Causal Representation Learning'
+  authors:
+    - 'Wei Chen Ng'
+    - 'Qiyi Xie'
+    - 'Yan Kang Lee'
+    - 'Wei Hown Tee'
+    - 'Hakim Qaid Abdullah Abdulrab'
+    - 'Tony Chang Soon Hii'
+    - 'Jian Ding Tan'
+  venue: 'Neurocomputing, vol. 708, 135279'
+  year: 2026
+  status: published
+  type: journal
+  selected: false
+  links:
+    doi: 'https://doi.org/10.1016/j.neucom.2026.135279'
+  bibtex: |
+    @article{ng2027jepa,
+      title     = {Predicting representations, modeling worlds, recovering causes: A critical review of JEPA, world models, and causal representation learning},
+      author    = {Ng, Wei Chen and Xie, Qiyi and Lee, Yan Kang and Tee, Wei Hown and Abdulrab, Hakim Qaid Abdullah and Hii, Tony Chang Soon and Tan, Jian Ding},
+      journal   = {Neurocomputing},
+      volume    = {708},
+      pages     = {135279},
+      year      = {2027},
+      publisher = {Elsevier},
+      doi       = {10.1016/j.neucom.2026.135279}
+    }
+- id: battery
+  title: 'A Computational System for Battery Life Prediction via Continuous-Time Power Decomposition and Electro-Thermal-Aging Coupled Modeling'
+  authors:
+    - 'Y. Wu'
+    - 'Z. Li'
+    - 'Qiyi Xie'
+    - 'Jian Ding Tan'
+  venue: '3rd International Conference on Telecommunications and Power Electronics (TELEPE 2026)'
+  year: 2026
+  status: accepted
+  type: conference
+  selected: false
+
+- id: dt-hrc
+  title: 'Comprehensive Application Analysis of Digital Twin System in Human Robot Collaboration'
+  authors:
+    - 'Qiyi Xie'
+  venue: 'Highlights in Science, Engineering and Technology, vol. 103, pp. 7–13'
+  year: 2024
+  status: published
+  type: journal
+  selected: false
+  links:
+    doi: 'https://doi.org/10.54097/s322yr33'
+  bibtex: |
+    @article{xie2024digitaltwin,
+      title     = {Comprehensive Application Analysis of Digital Twin System in Human Robot Collaboration},
+      author    = {Xie, Qiyi},
+      journal   = {Highlights in Science, Engineering and Technology},
+      volume    = {103},
+      pages     = {7--13},
+      year      = {2024},
+      doi       = {10.54097/s322yr33}
+    }
+- id: dt-farming
+  title: 'Recent Advances in the Digital Twin System for Smart Farming: A Five-Year Review'
+  authors:
+    - 'Qiyi Xie'
+    - 'Yuanjing Zhong'
+    - 'MohammadMahdi Ariannejad'
+    - 'Setio Timothy Darryl Budi'
+    - 'Chen Zeyu'
+    - 'Chen Shuyi'
+  venue: '2024 International Conference on Computing Innovation, Intelligence, Technologies and Education (CIITE), pp. 1–6'
+  year: 2024
+  status: published
+  type: conference
+  selected: false
+  links:
+    doi: 'https://doi.org/10.1109/CIITE62244.2024.10987837'
+  bibtex: |
+    @inproceedings{xie2024smartfarming,
+      title     = {Recent Advances in the Digital Twin System for Smart Farming: A Five-Year Review},
+      author    = {Xie, Qiyi and Zhong, Yuanjing and Ariannejad, MohammadMahdi and Budi, Setio Timothy Darryl and Zeyu, Chen and Shuyi, Chen},
+      booktitle = {2024 International Conference on Computing Innovation, Intelligence, Technologies and Education (CIITE)},
+      pages     = {1--6},
+      year      = {2024},
+      publisher = {IEEE},
+      doi       = {10.1109/CIITE62244.2024.10987837}
+    }

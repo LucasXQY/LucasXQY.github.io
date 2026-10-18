@@ -1,0 +1,40 @@
+---
+title: 'Coherent GW-YOLO: Gravitational-Wave Detection as Object Detection'
+summary: 'Gravitational-wave detection cast as object detection on time-frequency maps, with cross-detector coincidence to confirm candidates.'
+cover: ../../assets/projects/gw-yolo/cover.png
+tags: ['gravitational-waves', 'detection']
+date: '2026-06'
+status: ongoing
+featured: true
+publication: gw-yolo
+---
+
+import { Image } from 'astro:assets';
+import coincidence from '../../assets/projects/gw-yolo/coincidence.png';
+
+## The problem
+
+Gravitational-wave detectors record strain, a measure of how a passing wave stretches and squeezes their arms. Astrophysical signals in that record, such as the chirps from merging pairs of black holes or of neutron stars, are often faint. Glitches, transient noise artifacts that arise inside a single detector, can look much like those chirps, and at low signal-to-noise ratio a search that examines each detector on its own tends to raise false alarms.
+
+## The idea
+
+Coherent GW-YOLO converts strain data into Q-transform time–frequency images, where a chirp traces a rising track that a YOLO-based object detector can find and box. Candidates from the LIGO Hanford and Livingston detectors are then compared on timing, frequency evolution, and candidate consistency, because a gravitational wave reaches both detectors while a glitch stays local to one.
+
+<figure>
+  <Image
+    src={coincidence}
+    width={380}
+    alt="Q-transform maps from the Hanford (H1) and Livingston (L1) detectors stacked on a shared time axis, each with a boxed chirp ending at the same time and a boxed glitch at a different time"
+  />
+  <figcaption>
+    One test event: a simulated neutron-star merger added to real LIGO O4a detector noise, Hanford
+    (H1) above and Livingston (L1) below on a shared time axis. The model boxes the chirp in both
+    detectors, and both boxes end at the same moment (dashed line). Each detector's glitch appears
+    at its own time and has no partner in the other, which is what the coincidence step uses to
+    reject it.
+  </figcaption>
+</figure>
+
+## Why it matters
+
+Detection that supports early warning has to be reliable, not only sensitive. Building cross-detector coincidence into the framework itself, from labels through evaluation, targets false positives in the low signal-to-noise regime, where faint signals and glitches are hardest to tell apart. The low-light work in [VetoNet](/projects/vetonet/) rests on the same principle: claim only what the measurements support.
