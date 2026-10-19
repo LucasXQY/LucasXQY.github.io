@@ -70,6 +70,9 @@
   status: under-review
   type: journal
   selected: true
+  links:
+    arxiv: 'https://arxiv.org/abs/2610.22958'
+    doi: 'https://doi.org/10.48550/arXiv.2610.22958'
 
 - id: jepa-review
   title: 'Predicting Representations, Modeling Worlds, Recovering Causes: A Critical Review of JEPA, World Models, and Causal Representation Learning'
