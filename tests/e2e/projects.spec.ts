@@ -1,11 +1,11 @@
 import { expect, test } from '@playwright/test';
 
-test('the index lists eight project cards, the three featured ones first', async ({ page }) => {
+test('the index lists nine project cards, the three featured ones first', async ({ page }) => {
   await page.goto('/projects/');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Projects');
 
   const cards = page.getByTestId('project-card');
-  await expect(cards).toHaveCount(8);
+  await expect(cards).toHaveCount(9);
   // Featured first, newest first within each group.
   const hrefs = await cards.evaluateAll((els) => els.map((el) => el.getAttribute('href')));
   expect(hrefs).toEqual([
@@ -13,6 +13,7 @@ test('the index lists eight project cards, the three featured ones first', async
     '/projects/vetonet/',
     '/projects/prin/',
     '/projects/image2gps/',
+    '/projects/ssm-llie/',
     '/projects/laser-cooling-control/',
     '/projects/microgrid-digital-twin/',
     '/projects/maze-solving-robot/',
@@ -114,6 +115,7 @@ test('every project page keeps a single h1, a main figure and its body inside th
     'fpga-pwm-controller',
     'laser-cooling-control',
     'image2gps',
+    'ssm-llie',
   ]) {
     await page.goto(`/projects/${id}/`);
     await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
@@ -161,5 +163,17 @@ test('the PRIN page ends with three low / PRIN / ground-truth comparison rows', 
   for (const row of await rows.all()) {
     await expect(row.locator('img')).toHaveCount(3);
     await expect(row.locator('img').nth(1)).toHaveAttribute('alt', /PRIN output/);
+  }
+});
+
+test('the SSM page compares input, Base, Prompt-Adapter and ground truth in each row', async ({
+  page,
+}) => {
+  await page.goto('/projects/ssm-llie/');
+  const rows = page.locator('.prose .triplet-row');
+  await expect(rows).toHaveCount(3);
+  for (const row of await rows.all()) {
+    await expect(row.locator('img')).toHaveCount(4);
+    await expect(row.locator('img').nth(2)).toHaveAttribute('alt', /Prompt-Adapter output/);
   }
 });

@@ -363,10 +363,11 @@ const code = publication?.links.code;
     font-size: 13px;
   }
 
-  /* A low / ours / ground-truth comparison: three panels of one scene side by side. */
+  /* A comparison row: equal-width panels of one scene side by side (three or four of them). */
   .prose :global(.triplet-row) {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-auto-columns: 1fr;
+    grid-auto-flow: column;
     gap: 6px;
   }
 
