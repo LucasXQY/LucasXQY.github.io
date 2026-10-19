@@ -1,0 +1,77 @@
+---
+title: 'Bottleneck Prompt Sidecars for SSM-Based Low-Light Enhancement'
+summary: 'A safer way to feed illumination guidance into a state-space restorer: prompts enter through a bottleneck sidecar instead of rewriting the SSM core.'
+cover: ../../assets/projects/ssm-llie/cover.png
+tags: ['low-light', 'state-space']
+date: '2026-04'
+status: ongoing
+featured: false
+publication: mamba-llie
+---
+
+import { Image } from 'astro:assets';
+import poolLow from '../../assets/projects/ssm-llie/pool-low.png';
+import poolBase from '../../assets/projects/ssm-llie/pool-base.png';
+import poolOurs from '../../assets/projects/ssm-llie/pool-ours.png';
+import poolGt from '../../assets/projects/ssm-llie/pool-gt.png';
+import stadiumLow from '../../assets/projects/ssm-llie/stadium-low.png';
+import stadiumBase from '../../assets/projects/ssm-llie/stadium-base.png';
+import stadiumOurs from '../../assets/projects/ssm-llie/stadium-ours.png';
+import stadiumGt from '../../assets/projects/ssm-llie/stadium-gt.png';
+import flowersLow from '../../assets/projects/ssm-llie/flowers-low.png';
+import flowersBase from '../../assets/projects/ssm-llie/flowers-base.png';
+import flowersOurs from '../../assets/projects/ssm-llie/flowers-ours.png';
+import flowersGt from '../../assets/projects/ssm-llie/flowers-gt.png';
+
+export const comparisons = [
+  {
+    name: 'Swimming pool, LOL-v1',
+    detail: 'the wall clock',
+    images: [poolLow, poolBase, poolOurs, poolGt],
+  },
+  {
+    name: 'Stadium, LOL-v1',
+    detail: 'the stairs between the seats',
+    images: [stadiumLow, stadiumBase, stadiumOurs, stadiumGt],
+  },
+  {
+    name: 'Flowers, LOL-v2 Synthetic',
+    detail: 'a flower stem',
+    images: [flowersLow, flowersBase, flowersOurs, flowersGt],
+  },
+];
+
+export const panels = ['low-light input', 'Base output', 'Prompt-Adapter output', 'ground truth'];
+
+## The problem
+
+State-space (Mamba-style) restorers model long-range structure efficiently, which suits low-light images with uneven lighting, noise and colour shifts. Illumination priors should help them too, but how the prior enters the network matters. In early probes, injecting illumination signals directly into the state-space core gave no stable gain and sometimes produced unstable or visually unsafe output.
+
+## The idea
+
+The final design keeps the illumination guidance away from the core dynamics. A small estimator predicts an illumination map from the dark input, the map is turned into prompt tokens, and a residual sidecar adapter injects them at the restorer's bottleneck. The state-space blocks themselves are left untouched, so the guidance can shape the result without destabilizing the backbone. I developed this illumination-aware conditioning strategy and ran the evaluation on the benchmark datasets.
+
+## Results
+
+Over three training seeds on LOL-v1, the Prompt-Adapter raised PSNR from 25.01 dB to 25.95 dB and lowered LPIPS from 0.2292 to 0.2273 compared with the same restorer without it. A control that feeds a learned but input-independent prompt through the same sidecar scores about as well, so the evidence credits the sidecar route itself. Showing that the illumination content adds more on top of it is still open.
+
+Each row shows the low-light input, the restorer without the sidecar (Base), with it (Prompt-Adapter) and the ground truth. The small red box marks the window where the Prompt-Adapter output comes closest to the ground truth relative to Base, enlarged in the larger box.
+
+<div class="triplets">
+  {comparisons.map((c) => (
+    <figure>
+      <div class="triplet-row">
+        {c.images.map((src, i) => (
+          <Image src={src} width={300} alt={`${c.name}: ${panels[i]}, with ${c.detail} enlarged`} />
+        ))}
+      </div>
+      <figcaption>
+        {c.name}. Left to right: low-light input, Base, Prompt-Adapter, ground truth.
+      </figcaption>
+    </figure>
+  ))}
+</div>
+
+## Why it matters
+
+A stronger prior is not automatically a better one if the route it takes destabilizes the model. Treating conditioning as a question of where guidance should enter, rather than how much of it to add, gives a lightweight way to use illumination cues in efficient state-space restorers without redesigning the backbone.
