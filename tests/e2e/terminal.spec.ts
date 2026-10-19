@@ -246,18 +246,19 @@ test('theme light and theme dark switch the page theme', async ({ page }) => {
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 });
 
-test('cd cv goes to the CV page', async ({ page }) => {
+test('cd cv is refused while the CV page is hidden', async ({ page }) => {
   await page.keyboard.press('`');
   await run(page, 'cd cv');
-  await expect(page).toHaveURL(/\/cv\/$/);
+  await expect(output(page)).toContainText('cd: no such page: cv');
+  await expect(page).toHaveURL(/\/$/);
 });
 
 test('cd about goes home', async ({ page }) => {
-  await page.goto('/cv/');
+  await page.goto('/projects/');
   await page.keyboard.press('`');
   await run(page, 'cd about');
   await expect(page).toHaveURL(/\/$/);
-  await expect(page).not.toHaveURL(/\/cv\//);
+  await expect(page).not.toHaveURL(/\/projects\//);
 });
 
 test('open <paper-id> jumps to that paper on the publications page', async ({ page }) => {

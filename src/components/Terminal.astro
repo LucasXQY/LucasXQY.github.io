@@ -54,8 +54,9 @@ const pubs = loadPublications().map(({ id, title }) => ({ id, title }));
   import { store } from '../lib/achievements';
   import { isKnownCommand, runCommand, type TermContext } from '../lib/eggs/terminal';
   import { setTheme } from '../lib/theme';
+  import { SHOW_CV } from '../site.config';
 
-  const PAGES = ['about', 'publications', 'projects', 'cv', 'misc'];
+  const PAGES = ['about', 'publications', 'projects', ...(SHOW_CV ? ['cv'] : []), 'misc'];
 
   const dialog = document.querySelector<HTMLElement>('.terminal');
   const out = dialog?.querySelector<HTMLElement>('.term-out');
