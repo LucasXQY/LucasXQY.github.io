@@ -6,7 +6,6 @@ const pages = [
   { name: 'publications', path: '/publications/' },
   { name: 'projects', path: '/projects/' },
   { name: 'project detail', path: '/projects/prin/' },
-  { name: 'cv', path: '/cv/' },
   { name: 'misc', path: '/misc/' },
   { name: 'unlocked', path: '/misc/unlocked/' },
   { name: '404', path: '/not-a-page' },

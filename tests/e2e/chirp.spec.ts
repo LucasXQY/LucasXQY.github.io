@@ -155,7 +155,7 @@ test('without an AudioContext the chirp still unlocks and sweeps', async ({ page
 });
 
 test('the brand link is above the button: clicking it still goes home', async ({ page }) => {
-  await page.goto('/cv/');
+  await page.goto('/projects/prin/');
   await page.locator('nav .brand').click();
   await expect(page).toHaveURL('/');
   expect(await stored(page)).not.toContain('chirp');
@@ -165,7 +165,6 @@ test('the nav links and the theme toggle are above the button too', async ({ pag
   for (const [name, path] of [
     ['Publications', '/publications/'],
     ['Projects', '/projects/'],
-    ['CV', '/cv/'],
     ['About', '/'],
   ] as const) {
     await page.locator('nav .links').getByRole('link', { name, exact: true }).click();
@@ -182,7 +181,7 @@ test('the nav links and the theme toggle are above the button too', async ({ pag
 
 test('the button gets the clicks on the empty nav area only', async ({ page }) => {
   expect(await topmostAtCentreOf(page, '.brand')).toBe('a / brand');
-  expect(await topmostAtCentreOf(page, '.links a[href="/cv/"]')).toBe('a /cv/');
+  expect(await topmostAtCentreOf(page, '.links a[href="/projects/"]')).toBe('a /projects/');
   expect(await topmostAtCentreOf(page, '.theme-toggle')).toBe('button theme-toggle');
   expect(await topmostAtCentreOf(page, 'nav')).toBe('button nav-wave-btn egg');
 });
@@ -191,7 +190,7 @@ test('on a phone the controls are still above the button', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await topmostAtCentreOf(page, '.brand')).toBe('a / brand');
   expect(await topmostAtCentreOf(page, '.links a[href="/"]')).toBe('a /');
-  expect(await topmostAtCentreOf(page, '.links a[href="/cv/"]')).toBe('a /cv/');
+  expect(await topmostAtCentreOf(page, '.links a[href="/projects/"]')).toBe('a /projects/');
   expect(await topmostAtCentreOf(page, '.theme-toggle')).toBe('button theme-toggle');
 });
 

@@ -97,7 +97,7 @@ test('keyboard focus rings on the nav links fit inside the scrolling link list',
 }) => {
   await page.goto('/');
   await page.keyboard.press('Tab'); // the brand link comes first
-  for (const name of ['About', 'Publications', 'Projects', 'CV']) {
+  for (const name of ['About', 'Publications', 'Projects']) {
     await page.keyboard.press('Tab');
     const room = await page.evaluate(() => {
       const link = document.activeElement as HTMLElement;

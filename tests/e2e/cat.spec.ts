@@ -53,7 +53,7 @@ test('the cat is a decoration: hidden from assistive tech, not clickable, not fo
 test('the sprite loads from /oneko/oneko.gif on every page, not relative to the page', async ({
   page,
 }) => {
-  await page.goto('/cv/');
+  await page.goto('/projects/prin/');
   const sprite = page.waitForResponse((response) => response.url().endsWith('/oneko/oneko.gif'));
   await page.keyboard.type('cat');
   expect((await sprite).status()).toBe(200);
