@@ -166,3 +166,20 @@ test('Copy BibTeX writes the entry to the clipboard and says Copied for a moment
   );
   await expect(button).toHaveText('Copy BibTeX');
 });
+
+test('a paper under review links its arXiv preprint and keeps its journal venue', async ({
+  page,
+}) => {
+  const ssm = page.locator(`${ENTRY}#mamba-llie`);
+  await expect(ssm.locator('.venue')).toHaveText(
+    'IEEE Transactions on Pattern Analysis and Machine Intelligence',
+  );
+  await expect(ssm.getByRole('link', { name: 'arXiv', exact: true })).toHaveAttribute(
+    'href',
+    'https://arxiv.org/abs/2610.22958',
+  );
+  await expect(ssm.getByRole('link', { name: 'DOI', exact: true })).toHaveAttribute(
+    'href',
+    'https://doi.org/10.48550/arXiv.2610.22958',
+  );
+});
