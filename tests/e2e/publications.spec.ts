@@ -7,10 +7,10 @@ test.beforeEach(async ({ page }) => {
   await page.goto('/publications/');
 });
 
-test('lists all eight publications by default', async ({ page }) => {
+test('lists all nine publications by default', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Publications');
-  await expect(page.locator(ENTRY)).toHaveCount(8);
-  await expect(page.locator(VISIBLE_ENTRY)).toHaveCount(8);
+  await expect(page.locator(ENTRY)).toHaveCount(9);
+  await expect(page.locator(VISIBLE_ENTRY)).toHaveCount(9);
   await expect(page.locator('[data-filter="all"]')).toHaveAttribute('aria-pressed', 'true');
 });
 
@@ -31,7 +31,7 @@ test('the first-author and selected filters show the matching entries', async ({
   );
 
   await page.locator('[data-filter="all"]').click();
-  await expect(page.locator(VISIBLE_ENTRY)).toHaveCount(8);
+  await expect(page.locator(VISIBLE_ENTRY)).toHaveCount(9);
 });
 
 test('year headings include 2026 and 2024, and a year with no matches is hidden', async ({
