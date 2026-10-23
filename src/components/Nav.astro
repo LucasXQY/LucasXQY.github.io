@@ -15,6 +15,7 @@ const links = [
   { label: 'About', href: '/', misc: false },
   { label: 'Publications', href: '/publications/', misc: false },
   { label: 'Projects', href: '/projects/', misc: false },
+  { label: 'Experience', href: '/experience/', misc: false },
   ...(SHOW_CV ? [{ label: 'CV', href: '/cv/', misc: false }] : []),
   ...(showMisc ? [{ label: 'Misc', href: '/misc/', misc: true }] : []),
 ];
@@ -199,7 +200,7 @@ const wave = chirpPath(1100, 60);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: 6px;
     height: 100%;
     max-width: var(--content-max);
     margin-inline: auto;
@@ -234,16 +235,17 @@ const wave = chirpPath(1100, 60);
     white-space: nowrap;
   }
 
+  /* Tight on phones so all four links fit at 375px; narrower screens scroll the links. */
   .nav-right {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 10px;
     min-width: 0;
   }
 
   .links {
     display: flex;
-    gap: 14px;
+    gap: 10px;
     min-width: 0;
     /* overflow-x clips on all four sides, so the padding leaves room for the 4px focus ring and
        the negative margin keeps the links where they were. */
@@ -251,7 +253,7 @@ const wave = chirpPath(1100, 60);
     padding: 4px;
     overflow-x: auto;
     list-style: none;
-    font-size: 14px;
+    font-size: 13px;
     scrollbar-width: none;
   }
 
@@ -292,6 +294,10 @@ const wave = chirpPath(1100, 60);
 
     .brand-short {
       display: none;
+    }
+
+    .nav-right {
+      gap: 16px;
     }
 
     .links {
