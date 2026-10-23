@@ -1,0 +1,48 @@
+# Shown on /experience/ in this order, newest first within each section. Only role, place and
+# dates: the details live on the CV.
+- section: 'Teaching'
+  entries:
+    - role: 'Teaching Assistant, ESE 5070 Introduction to Networks and Protocols'
+      org: 'University of Pennsylvania'
+      location: 'Philadelphia, PA'
+      dates: 'Aug 2026 – Present'
+
+- section: 'Research'
+  entries:
+    - role: 'Research Assistant, Robotics Lab'
+      org: 'Xiamen University Malaysia'
+      location: 'Remote'
+      dates: 'Oct 2025 – Present'
+    - role: 'Research Assistant'
+      org: 'Xiamen University Malaysia'
+      location: 'Selangor, MYS'
+      dates: 'Sep 2024 – Aug 2025'
+    - role: 'Research Assistant'
+      org: 'Xiamen University Malaysia'
+      location: 'Selangor, MYS'
+      dates: 'Apr 2024 – Apr 2025'
+
+- section: 'Industry'
+  entries:
+    - role: 'AGV Hardware Engineer Intern'
+      org: 'Siemens'
+      location: 'Shanghai, CHN'
+      dates: 'Jan 2024 – Apr 2024'
+
+- section: 'Leadership'
+  entries:
+    - role: 'Student Advisor, Robotics Club'
+      org: 'Xiamen University Malaysia'
+      dates: 'Sep 2024 – Aug 2025'
+    - role: 'Co-Founder & Secretary Department Leader, Electrical & Electronics Engineering Student Union'
+      org: 'Xiamen University Malaysia'
+      dates: 'Sep 2023 – Aug 2024'
+    - role: 'Chair, IEEE Xiamen University Malaysia Student Branch'
+      org: 'Xiamen University Malaysia'
+      dates: 'Aug 2023 – Aug 2025'
+    - role: 'Vice President, Robotics Club'
+      org: 'Xiamen University Malaysia'
+      dates: 'Aug 2023 – Sep 2024'
+    - role: 'Activity Planner, Robotics Club'
+      org: 'Xiamen University Malaysia'
+      dates: 'Sep 2021 – Aug 2022'

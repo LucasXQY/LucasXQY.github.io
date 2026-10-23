@@ -5,6 +5,7 @@ import { parse } from 'yaml';
 import { z } from 'zod';
 import {
   cvSchema,
+  experienceSchema,
   miscSchema,
   newsSchema,
   profileSchema,
@@ -55,6 +56,7 @@ export const loadPublications = (): Publication[] =>
   loadYaml('src/data/publications.yaml', z.array(publicationSchema));
 export const loadNews = (): News => loadYaml('src/data/news.yaml', newsSchema);
 export const loadCv = (): Cv => loadYaml('src/data/cv.yaml', cvSchema);
+export const loadExperience = () => loadYaml('src/data/experience.yaml', experienceSchema);
 export const loadMisc = (): Misc => loadYaml('src/data/misc.yaml', miscSchema);
 
 /** True when public/cv.pdf exists, i.e. when the `/cv.pdf` link would resolve. */
