@@ -82,6 +82,20 @@ export const cvSchema = z.object({
   skills: z.array(z.object({ group: z.string(), items: z.array(z.string()) })),
 });
 
+export const experienceSchema = z.array(
+  z.object({
+    section: z.string(),
+    entries: z.array(
+      z.object({
+        role: z.string(),
+        org: z.string(),
+        location: z.string().optional(),
+        dates: z.string(),
+      }),
+    ),
+  }),
+);
+
 // In zod 4 `.default(v)` returns `v` as-is without parsing it, so nested defaults would be
 // skipped. `games` and `music` contain defaulted arrays, so they use `.prefault({})`, which
 // parses `{}` through the schema and lets those inner defaults apply.
