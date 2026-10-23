@@ -11,7 +11,7 @@ import {
 } from '../../src/lib/data';
 
 describe('data files', () => {
-  it('publications: 8 entries with the expected ids and selected set', () => {
+  it('publications: 9 entries with the expected ids and selected set', () => {
     const pubs = loadPublications();
     const expectedIds = [
       'prin',
@@ -19,11 +19,12 @@ describe('data files', () => {
       'gw-yolo',
       'mamba-llie',
       'jepa-review',
+      'self-improvement-review',
       'battery',
       'dt-hrc',
       'dt-farming',
     ];
-    expect(pubs).toHaveLength(8);
+    expect(pubs).toHaveLength(9);
     expect(pubs.map((p) => p.id).sort()).toEqual([...expectedIds].sort());
     expect(
       pubs

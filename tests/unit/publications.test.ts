@@ -245,11 +245,11 @@ describe('statusSummary', () => {
     expect(statusSummary([])).toEqual([]);
   });
 
-  it('on the real data: 4 published or accepted, 1 preprint, 2 under review, 1 in preparation', () => {
+  it('on the real data: 4 published or accepted, 1 preprint, 3 under review, 1 in preparation', () => {
     expect(statusSummary(loadPublications())).toEqual([
       '4 published or accepted',
       '1 preprint',
-      '2 under review',
+      '3 under review',
       '1 in preparation',
     ]);
   });

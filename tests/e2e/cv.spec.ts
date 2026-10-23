@@ -38,11 +38,11 @@ test.describe('the CV page', () => {
     await expect(link).toHaveCount(1);
     await expect(link).toContainText('4 published or accepted');
     await expect(link).toContainText('1 preprint');
-    await expect(link).toContainText('2 under review');
+    await expect(link).toContainText('3 under review');
     await expect(link).toContainText('1 in preparation');
     await expect(link).toHaveAttribute('href', '/publications/');
     await expect(link).toHaveAccessibleName(
-      '4 published or accepted · 1 preprint · 2 under review · 1 in preparation',
+      '4 published or accepted · 1 preprint · 3 under review · 1 in preparation',
     );
     await expect(page.getByText(/\d+ publications/)).toHaveCount(0);
   });

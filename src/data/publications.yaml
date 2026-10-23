@@ -74,6 +74,21 @@
     arxiv: 'https://arxiv.org/abs/2610.22958'
     doi: 'https://doi.org/10.48550/arXiv.2610.22958'
 
+- id: self-improvement-review
+  title: 'Attributing Self-Improvement in Language Models and Agents: A Critical Review of Experimental Controls'
+  authors:
+    - 'Wei Chen Ng'
+    - 'Qiyi Xie'
+    - 'Yan Kang Lee'
+    - 'Wei Hown Tee'
+    - 'Hakim Qaid Abdullah Abdulrab'
+    - 'Jian Ding Tan'
+  venue: 'Information Fusion'
+  year: 2026
+  status: under-review
+  type: journal
+  selected: false
+
 - id: jepa-review
   title: 'Predicting Representations, Modeling Worlds, Recovering Causes: A Critical Review of JEPA, World Models, and Causal Representation Learning'
   authors:
