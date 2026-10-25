@@ -38,7 +38,7 @@ import runnerPanel from '../../assets/projects/drone-swarm-defense/pipeline-d-ru
 
 ## The task
 
-This was a three-day team entry to the Action Space anti-drone hackathon (October 2026). The
+This was a two-day team entry to the Action Space anti-drone hackathon (October 2026). The
 organisers supplied an Isaac Lab simulation kit for DJI Tello drones, the real arena and the
 attacking drones; the rules arrived during the event and changed twice. The final version:
 
@@ -90,10 +90,10 @@ PPO continuation decayed monotonically to the level of a stationary policy, acro
 runs that varied the learning rate, critic fitting, action noise, output bounds and episode
 structure. The visible symptom was the policy mean drifting outside the ±1 action clip, where the
 clipped log-probabilities distort the gradient; bounding the mean with a tanh slowed the decay but
-did not stop it, so the drift was a symptom and the root cause was never found. By the evening of
-the event's first day, when the real three-versus-two rules arrived, I parked RL and treated the
-problem as what it is, a geometry problem with a known good solution, and used learning only to
-put that solution into a deployable network.
+did not stop it, so the drift was a symptom and the root cause was never found. Once the real
+three-versus-two rules arrived, I parked RL and treated the problem as what it is, a geometry
+problem with a known good solution, and used learning only to put that solution into a deployable
+network.
 
 ## The scripted teacher
 
@@ -427,9 +427,3 @@ passive" were a frame bug. When a learned policy must make a discrete choice, co
 and hand it over, and let the network do what it is good at. And when the rules keep changing,
 a scripted teacher plus distillation turns a rule change into a forty-minute re-clone instead of
 a new training run.
-
-What this page does not claim: the numbers are simulation results and the flight runner's
-behaviour on the real drones is not reported here; the simulator observes exact positions where
-the real drones see noisy, delayed fixes at 13.5 Hz rather than 60 Hz; the hit box is modelled as
-half-extents and would be stricter if the organisers meant full extents; and the separation guard
-that protects the real drones was never part of the simulated evaluation.
