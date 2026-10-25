@@ -1,14 +1,15 @@
 import { expect, test } from '@playwright/test';
 
-test('the index lists nine project cards, the three featured ones first', async ({ page }) => {
+test('the index lists ten project cards, the four featured ones first', async ({ page }) => {
   await page.goto('/projects/');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Projects');
 
   const cards = page.getByTestId('project-card');
-  await expect(cards).toHaveCount(9);
+  await expect(cards).toHaveCount(10);
   // Featured first, newest first within each group.
   const hrefs = await cards.evaluateAll((els) => els.map((el) => el.getAttribute('href')));
   expect(hrefs).toEqual([
+    '/projects/drone-swarm-defense/',
     '/projects/gw-yolo/',
     '/projects/vetonet/',
     '/projects/prin/',
@@ -116,6 +117,7 @@ test('every project page keeps a single h1, a main figure and its body inside th
     'laser-cooling-control',
     'image2gps',
     'ssm-llie',
+    'drone-swarm-defense',
   ]) {
     await page.goto(`/projects/${id}/`);
     await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);

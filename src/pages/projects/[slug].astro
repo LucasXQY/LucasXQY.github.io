@@ -375,4 +375,27 @@ const code = publication?.links.code;
     width: 100%;
     border-radius: 4px;
   }
+
+  /* Demo clips: the <video> fills its figure like an image does. */
+  .prose :global(video) {
+    display: block;
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+  }
+
+  /* Two clips side by side on wide screens, stacked on narrow ones. */
+  .prose :global(.video-grid) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0 16px;
+  }
+
+  @media (min-width: 760px) {
+    .prose :global(.video-grid) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
 </style>
