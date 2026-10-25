@@ -1,0 +1,435 @@
+---
+title: 'Drone Swarm Defense: Three Interceptors Against Two Attackers'
+summary: 'Three Tello drones ram two attackers before they cross a base line, with no central controller. A geometric scripted teacher, distilled into per-drone networks with DAgger, intercepts 99.7% of attackers in simulation and ships with a sim-to-real flight runner.'
+cover: ../../assets/projects/drone-swarm-defense/cover.jpg
+tags: ['drones', 'imitation-learning', 'sim-to-real']
+date: '2026-10'
+status: done
+featured: true
+---
+
+import { Image } from 'astro:assets';
+import obsPanel from '../../assets/projects/drone-swarm-defense/pipeline-a-observation.png';
+import teacherPanel from '../../assets/projects/drone-swarm-defense/pipeline-b-teacher.png';
+import daggerPanel from '../../assets/projects/drone-swarm-defense/pipeline-c-dagger.png';
+import runnerPanel from '../../assets/projects/drone-swarm-defense/pipeline-d-runner.png';
+
+<figure>
+  <video
+    controls
+    muted
+    playsinline
+    loop
+    preload="metadata"
+    poster="/videos/drone-swarm-defense/arena-final.jpg"
+    width="1280"
+    height="720"
+  >
+    <source src="/videos/drone-swarm-defense/arena-final.mp4" type="video/mp4" />
+  </video>
+  <figcaption>
+    The delivered policy in the organisers' arena geometry, Isaac Lab, side view at 1.5× slow
+    motion. Six rounds from take-off; in every round both attackers are rammed before they reach the
+    base line. The grey panel is the wall that carries the AprilTag, the red box in front of it is
+    the base and the pink fence is the base line 1.30 m out from the wall. Blue tags float above the
+    defenders and red tags above the attackers; a tag turns grey when its drone is out.
+  </figcaption>
+</figure>
+
+## The task
+
+This was a three-day team entry to the Action Space anti-drone hackathon (October 2026). The
+organisers supplied an Isaac Lab simulation kit for DJI Tello drones, the real arena and the
+attacking drones; the rules arrived during the event and changed twice. The final version:
+
+- A 6.6 m × 3.5 m room. The base is a 13 cm box 0.86 m out from the wall that carries AprilTag
+  10, and the **base line** is 1.30 m out from that wall. An attacker that crosses the line wins.
+- Two attacker Tellos take off at the far end of the room, 4.6–6.3 m from the wall, hover for
+  1–4 s while they find a tag, then fly at 0.3–0.7 m/s toward the base.
+- Three defender Tellos must **physically ram** the attackers from above. The hit box was given
+  as 15 × 15 × 3 cm; the simulator reads those as half-extents, so the vertical tolerance is a few
+  centimetres either way. A ram takes both drones out of the round, so every defender has exactly
+  one shot, and a missed interception must be covered by somebody else.
+- A Tello flies about 2 m/s at full stick, accelerates at roughly 3 m/s² and lags its command by
+  about 0.25 s. Each drone runs its own policy on its own observation: there is no central
+  controller and no channel for the defenders to negotiate who takes whom.
+
+My part of the team's work was the policy side: the simulation changes, the scripted teacher,
+the cloning pipeline, the Windows port of the kit and the flight runner. The simulator, the arena,
+the attackers and the drone infrastructure (AprilTag localisation, telemetry bus, multi-drone
+launcher) came from the organisers. Every number on this page is a simulation result; the page
+reports no real-flight results.
+
+## The route in one paragraph
+
+Reinforcement learning on this task did not produce a usable policy in the time available, so
+the final pipeline has three stages. A **scripted teacher** flies lead-pursuit interceptions and
+decides who chases whom with a small intercept-time table; the drone left over is the goalkeeper.
+A **small per-drone network** is cloned from the teacher with DAgger, so that what flies is a
+trained policy in a fixed, exportable format. A **flight runner** rebuilds exactly the 34 numbers
+the network saw in simulation from the drone's own camera, its teammates and the organisers'
+telemetry bus, and turns the network's output into Tello stick commands behind a safety layer.
+The one design decision that mattered most was to take the discrete "who chases whom" decision
+out of the network and feed it in as an input feature, computed identically on every drone.
+
+## What did not work first
+
+In the week before the event I ran the kit's defence task as shipped, with independent PPO
+(IPPO) on an easier two-versus-two curriculum stage (1 m capture sphere, attackers at
+0.2–0.4 m/s). The defenders never engaged: they hovered or drifted away. The first finding was not
+about rewards at all. The velocity controller computed a world-frame force but applied it as a
+body-frame one, so any yaw rotated the horizontal velocity loop and inverted it at 180°; a drone
+that turned toward an attacker fled at 3–4 m/s. The scripted baselines never yawed, which is why
+they looked fine. After rotating the force into the body frame, IPPO engaged in one of three
+seeds and reached 79.2% interception at best, still with 39% of rounds breached; a variant with
+less initial action noise engaged in two of three seeds but topped out at 43%.
+
+The obvious fix, warm-starting PPO from a behaviour-cloned copy of the greedy chase baseline
+(96% interception on that easy stage before any RL step), failed in a more interesting way: every
+PPO continuation decayed monotonically to the level of a stationary policy, across about forty
+runs that varied the learning rate, critic fitting, action noise, output bounds and episode
+structure. The visible symptom was the policy mean drifting outside the ±1 action clip, where the
+clipped log-probabilities distort the gradient; bounding the mean with a tanh slowed the decay but
+did not stop it, so the drift was a symptom and the root cause was never found. By the evening of
+the event's first day, when the real three-versus-two rules arrived, I parked RL and treated the
+problem as what it is, a geometry problem with a known good solution, and used learning only to
+put that solution into a deployable network.
+
+## The scripted teacher
+
+<figure>
+  <Image
+    src={teacherPanel}
+    width={720}
+    alt="Flowchart of one teacher step for one drone: observation, decentralised assignment from a 3 by 2 intercept-time table, then either lead pursuit for an assigned drone or goalkeeper standby for the unassigned one, then teammate repulsion and room bounds, then a clipped four-dimensional action to the velocity controller"
+  />
+  <figcaption>One teacher step for one drone. The same code runs on all three.</figcaption>
+</figure>
+
+### Lead pursuit: aim where the attacker will be
+
+Pure pursuit, flying at the attacker's current position, curves in behind a moving target and
+arrives from the side. The teacher instead aims at the point where the attacker will be, which
+makes the final approach a straight line, and the thin hit box punished every attempt to bend that
+line: a vertical P-loop in the last metre missed in 17–28% of attempts and an aim point that slid
+down over the last two metres missed in 50–61%, because both lag the Tello's 0.25 s response.
+With the attacker at relative position `r`, flying at velocity `v`, and the defender flying straight
+at `v_max`, the meeting time solves
+
+```
+|r + v t| = v_max t
+(|v|² − v_max²) t² + 2 (r · v) t + |r|² = 0
+```
+
+Because the attackers are slower than the defenders the quadratic has exactly one positive root,
+and the defender flies a straight line to `r + v t`. For an attacker 3 m ahead crossing at
+0.6 m/s against a 2 m/s defender, `t` is 1.57 s and the aim point sits 0.94 m to the side of
+where the attacker is now. If the equation has no solution the teacher falls back to pure
+pursuit. The aim point is biased 2 cm above the attacker so that contact comes from above, and
+nothing else touches the terminal run: no slow-down, no height correction, just the straight line.
+
+### Who chases whom: the intercept-time table
+
+The same formula gives the time each defender would need to reach each attacker. Every defender
+fills in the 3 × 2 table from its own observation, enumerates the six ways of giving each attacker
+a different defender, and takes the pairing with the smallest total time. A spent defender or a
+downed attacker costs 1000 s and is never chosen. The defender that is not in the winning pairing
+becomes the goalkeeper.
+
+This is decentralised and still consistent, because the table depends only on relative
+quantities. When drone 0 asks how long drone 1 needs to reach attacker 1, it subtracts "drone 1
+relative to me" from "attacker 1 relative to me", which is exactly "attacker 1 relative to
+drone 1", the number drone 1 computes directly. Same inputs, same deterministic code, same
+answer on all three drones, with ties broken by a fixed permutation order. Nothing is
+communicated except what each drone already observes: the teammates' positions.
+
+The table also replaced an earlier rule that sorted attackers by azimuth around the base and gave
+defender _i_ the _i_-th one. That rule failed in exactly one situation, two attackers arriving
+within about 15° of each other with one of them fast, where the assigned defender had to cross the
+whole room. Measured over 2000 rounds with the 0.20 m contact rule used before the arena was
+known:
+
+| Teacher assignment   | interception / breach | mean intercept time | closest pair, min / 5th pct |
+| -------------------- | --------------------- | ------------------- | --------------------------- |
+| azimuth rank         | 99.9% / 0.1%          | 4.5 s               | 0.20 m / 0.50 m             |
+| intercept-time table | **100% / 0%**         | **3.1 s**           | **0.63 m / 1.74 m**         |
+
+Three things improved at once: the last breaches disappeared, interceptions became faster, and
+the defenders stopped coming close to each other, because the goalkeeper became a dynamic role
+that falls to whichever drone is worst placed.
+
+### The goalkeeper and the "cover" rule
+
+The goalkeeper waits over its own launch spot, about 2 m up and above the attackers' cruising
+height. It is dispatched at the attacker nearest the base in two cases: when that attacker is
+within 2.2 m of the base and no active teammate is within 1.2 m of it, meaning the planned
+interception has failed and nobody is about to fix it; or when the attacker is within 1.7 m
+regardless, as a last line. The "no teammate within 1.2 m" condition exists because two defenders
+converging on one attacker push each other off the line and both miss.
+
+### Keeping the defenders apart
+
+With teammates in the observation, the teacher adds a short-range repulsion between defenders
+(within 0.7 m in the delivered version) and launches the three to slightly staggered heights,
+1.45, 1.50 and 1.55 m. The gain is a trade-off: strong horizontal repulsion pushes an interceptor
+off its own target when two attackers arrive from similar bearings, and at the strongest setting
+tried, interception fell from 100% to 86.5%. Under the earlier contact-sphere rules a mostly
+vertical repulsion worked best and lifted the 5th-percentile pair separation from 0.45 m to
+0.52 m without losing interceptions; once the thin hit box arrived, any vertical manoeuvre near
+the attacker cost hits, so the delivered teacher repels horizontally only and leaves the rest to
+the assignment, which keeps the defenders apart in the first place.
+
+## The observation, and why the assignment goes into it
+
+<figure>
+  <Image
+    src={obsPanel}
+    width={720}
+    alt="Layout of the 34-dimensional per-drone observation: 9 ego values, 2 attackers by 7 values, 2 teammates by 4 values, and a 3-value assignment feature holding a one-hot target and a goalkeeper flag"
+  />
+  <figcaption>
+    What each drone sees at every step. The last three numbers are the decision the network does not
+    have to make.
+  </figcaption>
+</figure>
+
+Each defender observes 34 numbers: its own position relative to the base, velocity and body-frame
+gravity (9); for each attacker the relative position, relative velocity and an alive flag (2 × 7);
+for each teammate the relative position and an active flag (2 × 4); and the assignment feature
+(3): a one-hot of the attacker it is responsible for, and a goalkeeper flag. The action is four
+numbers in [−1, 1], a world-frame velocity and a yaw rate, which the flight runner rotates by the
+drone's heading into the Tello's four stick channels.
+
+The assignment feature is the heart of the project. A direct clone of the intercept-time teacher,
+with the first 31 numbers only, reached 98.2% interception with 3.4% of rounds breached and a
+direction cosine of 0.95 to the teacher. The reason is structural: the assignment is the argmin of
+six sums, and near a tie a tiny change in positions flips which attacker is "mine". A network is a
+smooth function and blurs that cliff, so near ties it flies at neither attacker properly. Moving
+the argmin into the observation, computed by the same deterministic routine in the simulator, in
+the teacher and later in the flight runner, left the network with only continuous skills to learn:
+pursue, avoid, hold, return.
+
+| Clone of the same teacher       | assignment in the input | interception / breach | direction cosine |
+| ------------------------------- | ----------------------- | --------------------- | ---------------- |
+| 31-dim observation              | no                      | 98.2% / 3.4%          | 0.95             |
+| 34-dim observation, 2000 rounds | yes                     | **100% / 0%**         | 0.996–0.998      |
+
+The two rows differ in nothing but those three input numbers.
+
+## Distilling the teacher with DAgger
+
+<figure>
+  <Image
+    src={daggerPanel}
+    width={720}
+    alt="DAgger loop: roll out the teacher with Gaussian noise and label with the clean teacher, fit the network by mean squared error, roll out the student and relabel every state with the teacher, merge the data and refit the observation normaliser, repeat, then export TorchScript"
+  />
+  <figcaption>The cloning loop. The exported network carries its own input normaliser.</figcaption>
+</figure>
+
+Why not fly the teacher itself? The task statement asked for a policy trained in simulation; the
+teacher reads the simulator's configuration objects and is written for thousands of parallel
+environments on a GPU; and a small network is a fixed contract, 34 numbers in and 4 out, that
+exports to TorchScript or plain numpy arrays. Each defender's network is a multilayer perceptron,
+34 → 256 → 128 → 64 → 4, about fifty thousand parameters, with the observation normaliser folded
+into the exported module.
+
+Plain behaviour cloning fails here for the usual reason, compounding error. The teacher never
+drifts, so a student that imitates it never sees what a slightly-off state looks like; its own
+small errors carry it into states it has no labels for, where it errs more. Off-line cloning of the first scripted teacher reached only 32–47% interception, even with a
+generous 0.35 m capture sphere (that teacher also used a teammate distance a single drone cannot
+observe, which is what led to the observation-only assignment above). DAgger closes the gap by letting the student fly and asking the teacher to label every state the student
+actually visits:
+
+```
+round 0 : fly the teacher with Gaussian action noise (DART, σ = 0.3),
+          label every state with the clean teacher action
+round k : fly the student (mean action),
+          label every visited state with the teacher,
+          add to the dataset, refit the normaliser,
+          refit the network (MSE to the teacher's action)
+```
+
+The delivered clone used ten DAgger rounds of 800 steps × 512 environments, about 384k samples
+per drone per round and 4.2 million by the end, 60 epochs per refit, roughly forty minutes on a
+laptop RTX 5080. Hold-out error ended around 0.0005 with a direction cosine of 0.999 to the
+teacher. Two DAgger rounds had already taken the cosine from 0.974 to 0.992 on the first
+three-versus-two version; four rounds matched the teacher. Distillation does not improve on the
+teacher, it preserves the teacher in a form that can fly.
+
+## Results
+
+The delivered policy was evaluated over 1000 rounds in the final arena geometry, with the take-off
+phase, the hover-and-search of the attackers, the 15 × 15 × 3 cm hit box and the "both drones out
+after a ram" rule:
+
+| Final arena, 1000 rounds      | interception / breach | rams by defender 0 / 1 / 2 | mean intercept time | pairs closer than 0.30 m |
+| ----------------------------- | --------------------- | -------------------------- | ------------------- | ------------------------ |
+| scripted teacher (300 rounds) | 100% / 0%             | 1.00 / 0.19 / 0.81         | 4.7 s               | 1.0%                     |
+| **cloned network**            | **99.7% / 0.1%**      | 0.99 / 0.18 / 0.82         | 4.8 s               | 1.2%                     |
+
+The one breach in a thousand is the second attacker leaking through after the first ram, with both
+attackers near their speed limit. The previous clone, launched from 2 m with eight rounds and 40
+epochs, breached 1.2% of rounds, all in one pattern: after the first ram the two remaining
+defenders crowded the second attacker and both missed. The longer cloning schedule alone, still
+from 2 m, brought breaches down to 0.3%; with the 1.5 m launch heights they fell to 0.1% and the
+close-pair rounds from 4.0% to 1.2%. For scale, the greedy chase baseline under the earlier
+contact-sphere rules intercepted 86.8% of attackers and let 23.5% of rounds breach; the last clip
+below shows why.
+
+<figure>
+  <video
+    controls
+    muted
+    playsinline
+    preload="none"
+    poster="/videos/drone-swarm-defense/arena-teacher.jpg"
+    width="1280"
+    height="720"
+  >
+    <source src="/videos/drone-swarm-defense/arena-teacher.mp4" type="video/mp4" />
+  </video>
+  <figcaption>
+    The scripted teacher in the same arena, five rounds, all cleared. Compare with the cloned
+    network at the top of the page: the two are hard to tell apart, which is the point.
+  </figcaption>
+</figure>
+
+The clips below are an earlier checkpoint of the same pipeline, recorded before the arena figure
+arrived, under a 0.20 m contact sphere with attackers launching from 6 m away at 0.4–0.9 m/s
+and defenders capped at 1.0 m/s. They are the clearest view of the behaviour itself; here the red
+square is the base and the drones carry no team tags.
+
+<div class="video-grid">
+  <figure>
+    <video
+      controls
+      muted
+      playsinline
+      preload="none"
+      poster="/videos/drone-swarm-defense/wide.jpg"
+      width="1280"
+      height="720"
+    >
+      <source src="/videos/drone-swarm-defense/wide.mp4" type="video/mp4" />
+    </video>
+    <figcaption>
+      Ten rounds, all cleared in 3.6–7.0 s. Two defenders launch at once, each at its own attacker,
+      while the third holds above the base as goalkeeper.
+    </figcaption>
+  </figure>
+  <figure>
+    <video
+      controls
+      muted
+      playsinline
+      preload="none"
+      poster="/videos/drone-swarm-defense/waves.jpg"
+      width="1280"
+      height="720"
+    >
+      <source src="/videos/drone-swarm-defense/waves.mp4" type="video/mp4" />
+    </video>
+    <figcaption>
+      Waves: a new pair of attackers launches whenever the field is cleared. 22 rams in 60 simulated
+      seconds, no breach.
+    </figcaption>
+  </figure>
+  <figure>
+    <video
+      controls
+      muted
+      playsinline
+      preload="none"
+      poster="/videos/drone-swarm-defense/fast-attackers.jpg"
+      width="1280"
+      height="720"
+    >
+      <source src="/videos/drone-swarm-defense/fast-attackers.mp4" type="video/mp4" />
+    </video>
+    <figcaption>
+      Attackers at 0.9–1.2 m/s against defenders capped at 1.0 m/s: eight rounds, all cleared. Lead
+      pursuit keeps closing as long as the attacker is not much faster than the defender.
+    </figcaption>
+  </figure>
+  <figure>
+    <video
+      controls
+      muted
+      playsinline
+      preload="none"
+      poster="/videos/drone-swarm-defense/chase-baseline.jpg"
+      width="1280"
+      height="720"
+    >
+      <source src="/videos/drone-swarm-defense/chase-baseline.mp4" type="video/mp4" />
+    </video>
+    <figcaption>
+      The greedy "chase the nearest attacker" baseline under the same rules: the defenders pile onto
+      one target, two of them pass within 0.1 m of each other, and the second attacker breaches at
+      47 s of video time (31 s simulated).
+    </figcaption>
+  </figure>
+</div>
+
+## From simulation to the real drones
+
+<figure>
+  <Image
+    src={runnerPanel}
+    width={720}
+    alt="One control tick of the flight runner for drone i: telemetry-bus attackers, AprilTag ego pose and in-process teammates are combined into the 34-dimensional observation, the network produces the action, a safety layer applies a 0.6 m separation guard and inactivity rules, and the world-frame velocity is rotated by the heading into Tello rc channels"
+  />
+  <figcaption>One control tick on the real drone, 13.5 times per second.</figcaption>
+</figure>
+
+The network only knows the world it saw in simulation, so the runner's job is to make the real
+world produce the same 34 numbers with the same meaning, coordinate frame and clipping, and to
+keep everything that is not in the simulation outside the network, in plain code with tests.
+
+- **Own pose** comes from the drone's camera: AprilTag detection against the organisers' room
+  map, the same localiser their tools use. Velocity is a 0.4 s finite difference.
+- **Attackers** come from the organisers' telemetry bus, where their attacking policy publishes
+  each drone's position and state. An attacker counts as alive while its message is younger than
+  1 s, it reads above 50 cm, and its state is not landing or done; a rammed or landed attacker
+  keeps its last position with the alive flag at zero, exactly the simulator's convention.
+- **Teammates** are the other defenders in the same process. A teammate is marked inactive when
+  it has been below 30 cm for a second, silent for three seconds or without a fix for six, which is
+  what "spent after a ram" looks like on real hardware.
+- **The assignment feature** is a line-by-line numpy port of the simulator's routine, checked
+  equal to the torch original on 400 random observations for every drone.
+- **Output**: the network's world-frame velocity is clipped by a room fence, rotated by the
+  drone's heading into body-frame stick values, and sent as the Tello `rc` command. The yaw
+  channel is overridden to keep the camera on the tags.
+- **Safety layer**: a climb phase to the launch heights (145/150/155 cm) before the network takes
+  over; a hold when no attacker is on the bus, since the network never saw an empty field; a
+  separation guard that makes the higher-numbered defender hold horizontally when two come within
+  0.6 m until they are 0.8 m apart; hover after 0.5 s without a position fix and land after 6 s.
+- **Two copies of the weights**: TorchScript for a laptop with PyTorch, and the same networks as
+  numpy arrays for one without. On 500 random inputs the two agree to 4 × 10⁻⁶.
+
+The runner ships as a policy class inside the organisers' multi-drone launcher, with a
+configuration file, 24 unit tests and a no-drone kinematic demo, so that they could run it next to
+their attackers without changing anything else in their stack.
+
+## What I would say about it
+
+The pieces are classical: lead pursuit is interception geometry, the assignment is a tiny
+instance of the assignment problem solved by enumeration, DAgger and DART are published
+imitation-learning methods. The contribution is in how they fit together under the real rules:
+a decentralised assignment that every drone reproduces from its own observation; the finding,
+with a one-variable ablation, that the discrete decision must be an **input** to the network
+rather than something it learns; and the engineering that keeps simulation, teacher and flight
+runner numerically consistent, down to a numpy twin of the weights.
+
+Three lessons I am keeping. Debug the controller before the reward: days of "the policy is
+passive" were a frame bug. When a learned policy must make a discrete choice, compute the choice
+and hand it over, and let the network do what it is good at. And when the rules keep changing,
+a scripted teacher plus distillation turns a rule change into a forty-minute re-clone instead of
+a new training run.
+
+What this page does not claim: the numbers are simulation results and the flight runner's
+behaviour on the real drones is not reported here; the simulator observes exact positions where
+the real drones see noisy, delayed fixes at 13.5 Hz rather than 60 Hz; the hit box is modelled as
+half-extents and would be stricter if the organisers meant full extents; and the separation guard
+that protects the real drones was never part of the simulated evaluation.
