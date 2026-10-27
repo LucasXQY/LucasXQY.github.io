@@ -1,14 +1,15 @@
 ---
 import Base from '../layouts/Base.astro';
-import { loadExperience } from '../lib/data';
+import { loadCv, loadExperience } from '../lib/data';
 import { SITE_TITLE } from '../site.config';
 
 const sections = loadExperience();
+const { honors } = loadCv();
 ---
 
 <Base
   title={`Experience · ${SITE_TITLE}`}
-  description="Teaching, research, industry and leadership roles held by Qiyi (Lucas) Xie."
+  description="Teaching, research, industry and leadership roles, and honors and awards, of Qiyi (Lucas) Xie."
 >
   <div class="experience">
     <h1>Experience</h1>
@@ -29,6 +30,17 @@ const sections = loadExperience();
         </ul>
       </section>
     ))}
+    <section>
+      <h2>Honors &amp; Awards</h2>
+      <ul class="entries">
+        {honors.map((honor) => (
+          <li class="entry">
+            <h3 class="role">{honor.title}</h3>
+            <p class="when mono">{honor.date}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
   </div>
 </Base>
 
