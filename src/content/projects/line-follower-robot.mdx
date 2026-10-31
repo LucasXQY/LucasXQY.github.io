@@ -1,0 +1,46 @@
+---
+title: 'Line-Following Robot: Robotics Club Weekly Class'
+summary: 'A tracked Arduino robot that follows a black line with four infrared sensors, built as the hands-on finale of the Robotics Club weekly class I taught.'
+cover: ../../assets/projects/line-follower-robot/cover.jpg
+tags: ['robotics', 'arduino', 'teaching']
+date: '2023-12'
+status: done
+featured: false
+---
+
+## The project
+
+As a mentor and Vice President of the Robotics Club at Xiamen University Malaysia, I taught the club's weekly robotics class in the September 2023 term, jointly run with the IEEE XMUM Student Branch. The class was built for members with no hardware background, and every lesson added one piece of a working robot:
+
+- **Arduino basics.** Digital input and output, and lighting LEDs from code.
+- **Driving a motor.** Wiring a DC motor through an L298N H-bridge and switching its direction.
+- **Speed control.** Setting motor speed with PWM duty cycles, first with the Arduino's built-in PWM pins and then by switching a plain digital pin on and off by hand.
+- **Measuring speed.** Counting encoder pulses with an interrupt every 100 ms, then nudging the PWM up or down until the motor holds a target speed.
+
+The term closed with a hands-on workshop in which members put these pieces together into a robot that follows a black line on its own.
+
+## The robot
+
+The robot runs on a tracked chassis with one DC motor per track, driven by an L298N dual H-bridge from an Arduino Uno and powered by two 18650 lithium cells. Four infrared reflective sensors sit in a row across the front, facing the floor. Each one reports a single bit: whether it is over the dark line, which reflects little infrared light, or over the bright floor, which reflects a lot. A breadboard on top carries the wiring, so members could rewire and test without soldering.
+
+A tracked robot has no steering wheel. It turns by running its two tracks at different speeds, so every steering decision becomes a pair of PWM values, one for each motor.
+
+## Control logic
+
+Reading the sensors from left to right as outer left, inner left, inner right and outer right, with 1 meaning that sensor sees the line, the robot loops continuously through this table:
+
+| Sensors (L2 L1 R1 R2) | What it means                         | Action                                                      |
+| --------------------- | ------------------------------------- | ----------------------------------------------------------- |
+| 0 1 1 0               | Line centred under the robot          | Drive straight, both tracks at the same speed               |
+| 0 1 0 0               | Line drifting slightly to the left    | Gentle left: slow the left track                            |
+| 0 0 1 0               | Line drifting slightly to the right   | Gentle right: slow the right track                          |
+| 1 1 0 0 or 1 0 0 0    | Sharp bend to the left                | Pivot left: left track backward, right track forward        |
+| 0 0 1 1 or 0 0 0 1    | Sharp bend to the right               | Pivot right: right track backward, left track forward       |
+| 1 1 1 1               | Crossing bar or finish line           | Stop                                                        |
+| 0 0 0 0               | Line lost, usually just past a corner | Keep turning the way it last turned until a sensor finds it |
+
+The two inner sensors handle ordinary tracking. While the line stays between them, small speed differences keep the robot centred. The two outer sensors work as an early warning: they only see the line when it bends too sharply for a gentle correction, and that is when the robot pivots on the spot instead. The robot also remembers which way it last turned, so when it overshoots a tight corner and loses the line, it swings back toward where the line was rather than stopping or guessing.
+
+## Why it matters
+
+The line follower turned four separate lessons into one machine: digital input from the sensors, motor direction from the H-bridge, speed from PWM, and a feedback loop that reads the world and corrects itself many times a second. Members who started the term by lighting an LED finished it with a robot that made its own steering decisions, and the same sense-decide-act loop is the core of the autonomy work I went on to do, such as the [Path-Finding Robot](/projects/maze-solving-robot/).
