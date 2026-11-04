@@ -13,7 +13,20 @@
   status: under-review
   type: journal
   selected: true
+  links:
+    arxiv: 'https://arxiv.org/abs/2610.41338'
+    doi: 'https://doi.org/10.48550/arXiv.2610.41338'
   note: 'second round'
+  bibtex: |
+    @misc{xie2026prin,
+      title         = {PRIN: A Perceptual-Structural Retinex-Inspired Network for Low-Light Image Enhancement},
+      author        = {Xie, Qiyi and Ng, Wei Chen and Li, Ziyao and Wu, Yuning and Wu, Huasen and Miao, Tianshi and Tan, Jian Ding},
+      year          = {2026},
+      eprint        = {2610.41338},
+      archivePrefix = {arXiv},
+      primaryClass  = {eess.IV},
+      doi           = {10.48550/arXiv.2610.41338}
+    }
 
 - id: vetonet
   title: 'When Should a Low-Light Pipeline Generate? Auditable Risk Control for Selective Generative Enhancement'
