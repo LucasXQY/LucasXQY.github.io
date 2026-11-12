@@ -1,6 +1,6 @@
 ---
-title: 'Coherent GW-YOLO: Gravitational-Wave Detection as Object Detection'
-summary: 'Gravitational-wave detection cast as object detection on time-frequency maps, with cross-detector coincidence to confirm candidates.'
+title: 'Ranking Two-Detector Gravitational-Wave Triggers from Object Detection'
+summary: 'A pre-registered ranking statistic that turns object-detector boxes from the two LIGO detectors into one search score, tested on real O4 noise.'
 cover: ../../assets/projects/gw-yolo/cover.png
 tags: ['gravitational-waves', 'detection']
 date: '2026-06'
@@ -14,11 +14,11 @@ import coincidence from '../../assets/projects/gw-yolo/coincidence.png';
 
 ## The problem
 
-Gravitational-wave detectors record strain, a measure of how a passing wave stretches and squeezes their arms. Astrophysical signals in that record, such as the chirps from merging pairs of black holes or of neutron stars, are often faint. Glitches, transient noise artifacts that arise inside a single detector, can look much like those chirps, and at low signal-to-noise ratio a search that examines each detector on its own tends to raise false alarms.
+Gravitational-wave detectors record strain, a measure of how a passing wave stretches and squeezes their arms. On a Q-transform time–frequency image of that record, the chirp from a merging pair of compact objects traces a rising track that a YOLO-based object detector can find and box. Glitches, transient noise artifacts that arise inside a single detector, can look much like those chirps. An object detector also returns boxes in one detector at a time, while a search needs the evidence from two detectors ranked by a single statistic, with a false-alarm rate measured on real noise.
 
 ## The idea
 
-Coherent GW-YOLO converts strain data into Q-transform time–frequency images, where a chirp traces a rising track that a YOLO-based object detector can find and box. Candidates from the LIGO Hanford and Livingston detectors are then compared on timing, frequency evolution, and candidate consistency, because a gravitational wave reaches both detectors while a glitch stays local to one.
+This project builds that statistic on top of the boxes from the LIGO Hanford and Livingston detectors. It scores each candidate from two kinds of evidence: whether the boxes in the two detectors coincide in time, since a gravitational wave reaches both while a glitch stays local to one, and whether the strain inside the boxes agrees between the detectors. The statistic has no trainable parameters, and its background is estimated from time slides of real detector noise.
 
 <figure>
   <Image
@@ -27,14 +27,18 @@ Coherent GW-YOLO converts strain data into Q-transform time–frequency images, 
     alt="Q-transform maps from the Hanford (H1) and Livingston (L1) detectors stacked on a shared time axis, each with a boxed chirp ending at the same time and a boxed glitch at a different time"
   />
   <figcaption>
-    One test event: a simulated neutron-star merger added to real LIGO O4a detector noise, Hanford
+    One test event: a simulated compact-binary merger added to real LIGO O4a detector noise, Hanford
     (H1) above and Livingston (L1) below on a shared time axis. The model boxes the chirp in both
     detectors, and both boxes end at the same moment (dashed line). Each detector's glitch appears
-    at its own time and has no partner in the other, which is what the coincidence step uses to
-    reject it.
+    at its own time and has no partner in the other, which is what the time-coincidence part of the
+    statistic uses against it.
   </figcaption>
 </figure>
 
+## How it is tested
+
+Each evaluation was registered before its test data were chosen, with the criteria and the predicted outcomes written down first, and was then run once. The study covers two periods of LIGO's fourth observing run and a set of catalogued binary-black-hole events, and compares the statistic with a plain time-coincidence baseline on the same boxes. Predictions that failed are reported next to those that held. A manuscript is in preparation, so the numbers stay out of this page for now.
+
 ## Why it matters
 
-Detection that supports early warning has to be reliable, not only sensitive. Building cross-detector coincidence into the framework itself, from labels through evaluation, targets false positives in the low signal-to-noise regime, where faint signals and glitches are hardest to tell apart. The low-light work in [VetoNet](/projects/vetonet/) rests on the same principle: claim only what the measurements support.
+A detection method is only useful to a search if its false-alarm rate is known and its reported performance can be trusted. Fixing the analysis before seeing the test data removes the freedom to tune after the fact. The low-light work in [VetoNet](/projects/vetonet/) rests on the same principle: claim only what the measurements support.

@@ -25,11 +25,10 @@ test('the sidebar offers email and the profile links, and no link whose data is 
 }) => {
   const sidebar = page.getByTestId('sidebar');
   await expect(page.locator('a[href="mailto:xieqiyi@ieee.org"]')).toHaveCount(1);
-  await expect(sidebar.getByText('Google Scholar')).toHaveCount(0);
   await expect(sidebar.getByText('GitHub')).toHaveCount(0);
   await expect(page.getByText('CV (PDF)')).toHaveCount(0);
 
-  for (const name of ['ORCID', 'LinkedIn', 'ResearchGate']) {
+  for (const name of ['Google Scholar', 'ORCID', 'LinkedIn', 'ResearchGate']) {
     const link = sidebar.getByRole('link', { name });
     await expect(link).toHaveCount(1);
     await expect(link).toHaveAttribute('rel', 'me noopener');
