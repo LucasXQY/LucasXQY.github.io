@@ -1,11 +1,11 @@
 import { expect, test } from '@playwright/test';
 
-test('the index lists ten project cards, the four featured ones first', async ({ page }) => {
+test('the index lists twelve project cards, the four featured ones first', async ({ page }) => {
   await page.goto('/projects/');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Projects');
 
   const cards = page.getByTestId('project-card');
-  await expect(cards).toHaveCount(10);
+  await expect(cards).toHaveCount(12);
   // Featured first, newest first within each group.
   const hrefs = await cards.evaluateAll((els) => els.map((el) => el.getAttribute('href')));
   expect(hrefs).toEqual([
@@ -13,10 +13,12 @@ test('the index lists ten project cards, the four featured ones first', async ({
     '/projects/gw-yolo/',
     '/projects/vetonet/',
     '/projects/prin/',
+    '/projects/drift-space-llie/',
     '/projects/image2gps/',
     '/projects/ssm-llie/',
     '/projects/laser-cooling-control/',
     '/projects/microgrid-digital-twin/',
+    '/projects/line-follower-robot/',
     '/projects/maze-solving-robot/',
     '/projects/fpga-pwm-controller/',
   ]);

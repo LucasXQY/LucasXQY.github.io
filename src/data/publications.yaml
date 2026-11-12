@@ -59,7 +59,7 @@
       doi           = {10.48550/arXiv.2610.21335}
     }
 - id: gw-yolo
-  title: 'Coherent GW-YOLO: Cross-Detector Coincidence for Time–Frequency Object Detection of Gravitational Waves'
+  title: 'A Pre-Registered Hierarchical Ranking Statistic for Two-Detector Gravitational-Wave Triggers from Image-Domain Object Detection on LIGO O4 Data'
   authors:
     - 'Qiyi Xie'
     - 'et al.'
@@ -97,6 +97,21 @@
     - 'Hakim Qaid Abdullah Abdulrab'
     - 'Jian Ding Tan'
   venue: 'Information Fusion'
+  year: 2026
+  status: under-review
+  type: journal
+  selected: false
+
+- id: pv-conformal
+  title: 'Overcast-Day Coverage of Conformal Day-Ahead Photovoltaic Power Intervals: A Weather-Stratified Evaluation of Localized Calibration and Weather Context on Eight Stations'
+  authors:
+    - 'Wei Chen Ng'
+    - 'Yu Chen Lee'
+    - 'Yan Kang Lee'
+    - 'Qiyi Xie'
+    - 'Chia Chao Kang'
+    - 'Jian Ding Tan'
+  venue: 'Journal of Power Sources'
   year: 2026
   status: under-review
   type: journal

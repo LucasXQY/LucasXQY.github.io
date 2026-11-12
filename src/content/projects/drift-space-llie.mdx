@@ -1,0 +1,26 @@
+---
+title: 'Drift-Space Low-Light RAW Enhancement'
+summary: 'A small physics-based network that enhances low-light RAW images without ever training on a low-light photo, with pre-registered tests of what does and does not carry over between cameras.'
+tags: ['low-light', 'raw', 'physics-based']
+date: '2026-09'
+status: ongoing
+featured: false
+---
+
+## The problem
+
+Most low-light enhancement networks learn from paired dark and bright photos of the same scene. Such pairs are hard to collect, and a model trained on them is tied to the cameras and scenes they came from. For RAW sensor data the noise is also far from simple: it depends on the signal level and on the sensor.
+
+## The idea
+
+This project trains on clean images only. Low-light inputs are synthesized from them with a physical model of the sensor, combining signal-dependent (Poisson–Gaussian) noise with a change of illumination, so the network never sees a real low-light image or a real pair. Instead of predicting pixel values directly, it works in the logarithmic domain, where a change of illumination becomes an additive offset. The network estimates a potential there, and a closed-form step turns the potential back into an image. The model is small and fast enough for a laptop GPU.
+
+## What the tests showed
+
+The model was frozen and then evaluated on real RAW photos from several cameras, against a matched baseline that works directly in image space, and the potential-space model came out ahead. A control experiment then showed that most of that gain comes from giving the network its input in logarithmic coordinates, and less from the rest of the design.
+
+A follow-up study, registered before it was run, asked whether a learned correction could make the method work across cameras without calibration. That claim did not hold. The correction helped only when calibration was available, and I report it that way.
+
+## Why it matters
+
+Training without low-light data removes the need for paired captures, and the control experiments say which part of the method earns the gain. As in [VetoNet](/projects/vetonet/) and the [gravitational-wave project](/projects/gw-yolo/), the tests are fixed before the results are seen, and a negative result is reported as one.

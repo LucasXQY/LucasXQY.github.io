@@ -2,6 +2,7 @@
 import { Image } from 'astro:assets';
 import { resolveAsset } from '../lib/assets';
 import type { Profile } from '../schemas';
+import { MAPMYVISITORS_TOKEN } from '../site.config';
 
 interface Props {
   profile: Profile;
@@ -62,6 +63,14 @@ if (links.researchgate)
     icon: { mark: 'RG' },
   });
 if (cvPdf) items.push({ label: 'CV (PDF)', href: '/cv.pdf', external: false, icon: 'doc' });
+
+// The widget script draws a small world map of visitor locations with the page-view count, in
+// place, right after its own <script> element.
+// Colours match the dark theme tokens: land, ocean, past visitors, recent visitors, text.
+// `t=tt` shows the total page-view count.
+const visitorMapSrc = MAPMYVISITORS_TOKEN
+  ? `https://mapmyvisitors.com/map.js?cl=334155&w=a&t=tt&d=${encodeURIComponent(MAPMYVISITORS_TOKEN)}&co=0f1620&cmo=a78bfa&cmn=22d3ee&ct=e5e7eb`
+  : undefined;
 ---
 
 <div class="sidebar" data-testid="sidebar">
@@ -118,6 +127,11 @@ if (cvPdf) items.push({ label: 'CV (PDF)', href: '/cv.pdf', external: false, ico
       </li>
     ))}
   </ul>
+  {visitorMapSrc && (
+    <div class="visitors" data-testid="visitor-map" aria-label="Visitor map and page views">
+      <script is:inline type="text/javascript" id="mapmyvisitors" src={visitorMapSrc} />
+    </div>
+  )}
 </div>
 
 <style>
@@ -125,6 +139,25 @@ if (cvPdf) items.push({ label: 'CV (PDF)', href: '/cv.pdf', external: false, ico
      left-aligned column. */
   .sidebar {
     text-align: center;
+  }
+
+  /* Third-party visitor map: kept small, and left off a printed page. */
+  .visitors {
+    max-width: 190px;
+    margin: 18px auto 0;
+  }
+
+  .visitors :global(img),
+  .visitors :global(canvas),
+  .visitors :global(svg) {
+    max-width: 100%;
+    height: auto;
+  }
+
+  @media print {
+    .visitors {
+      display: none;
+    }
   }
 
   .photo {
@@ -262,6 +295,10 @@ if (cvPdf) items.push({ label: 'CV (PDF)', href: '/cv.pdf', external: false, ico
   @media (min-width: 960px) {
     .sidebar {
       text-align: left;
+    }
+
+    .visitors {
+      margin-inline: 0;
     }
 
     .photo {
